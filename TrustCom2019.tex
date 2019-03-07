@@ -22,7 +22,7 @@
 \begin{document}
 
 \title{
-  Real-time Cyber attack Detection Method based on Darknet Traffic Analysis by Graphical Lasso
+  Real-time Cyber-attack Detection Method based on Darknet Traffic Analysis by Graphical Lasso
 }
 
 \author{
@@ -39,49 +39,49 @@
 \maketitle
 
 \begin{abstract}
-Recently, as cyber attacks from malware are evolving more and more, serious security incidents occur frequently and making cyberspace less secure.
-Accordingly, studies on cyber attack detection methods that can cope with subspecies and unknown cyber attacks promptly and precisely are important.
+Recently, as cyber-attacks from malware are evolving more and more, serious security incidents occur frequently and making cyberspace less secure.
+Accordingly, studies on cyber-attack detection methods that can cope with subspecies and unknown cyber-attacks promptly and precisely are important.
 Our earlier method monitors network traffic arriving at a darknet, estimates cooperativeness of the source host pairs of this traffic, and detects outliers through anomaly cooperative traffic.
-One of the causes of anomaly source host-to-host cooperativeness on darknet traffic is a cyber attack using Internet-wide scanning.
-However, although the method is effective for cyber attack detection, it can not analyze in real-time.
-In this study, we propose an online processing algorithm, making it possible to detect cyber attacks in real-time.
+One of the causes of anomaly source host-to-host cooperativeness on darknet traffic is a cyber-attack using Internet-wide scanning.
+However, although the method is effective for cyber-attack detection, it can not analyze in real-time.
+In this study, we propose an online processing algorithm, making it possible to detect cyber-attacks in real-time.
 We also tune several important parameters, implement and operate the proposed method, and evaluate the performance of our method.
-As a result of evaluating cyber attack detection accuracy through a limited ground truth, we obtained results of 91.2\% accuracy, 100\% precision, 91.2\% recall, 95.4\% F-measure.
+As a result of evaluating cyber-attack detection accuracy through a limited ground truth, we obtained results of 91.2\% accuracy, 100\% precision, 91.2\% recall, 95.4\% F-measure.
 \end{abstract}
 
 \begin{IEEEkeywords}
-Real-time cyber attack detection, Darknet traffic analysis, Outlier detection, Cooperativeness.
+Real-time cyber-attack detection, Darknet traffic analysis, Outlier detection, Cooperativeness.
 \end{IEEEkeywords}
 
 
 \section{Introduction}
-Cyber attacks have continued to grow and become diverse recently, and the number of variants and unknown cyber attacks is increasing.
-In any cyber attack, it is important to quickly and precisely grasp actual behaviors of cyber attacks on the Internet as a countermeasure.
-As a conventional method for dealing with actual cyber attacks quickly and precisely by network-based access control and analysis, there are signature based and whitelist/blacklist based access control method like a intrusion detection system and a firewall.
-In general, however, these conventional methods cannot expect to cope with subspecies and unknown cyber attacks.
+Cyber-attacks have continued to grow and become diverse recently, and the number of variants and unknown cyber-attacks is increasing.
+In any cyber-attack, it is important to quickly and precisely grasp actual behaviors of cyber-attacks on the Internet as a countermeasure.
+As a conventional method for dealing with actual cyber-attacks quickly and precisely by network-based access control and analysis, there are signature based and whitelist/blacklist based access control method like a intrusion detection system and a firewall.
+In general, however, these conventional methods cannot expect to cope with subspecies and unknown cyber-attacks.
 Also, there is a heuristic rule-based analysis and response method by experts such as network security operators, but human error can occur.
-For the above reasons, studies on a cyber attack detection method that can quickly and precisely deal with subspecies and unknown cyber attacks and without human error are important in recent years.
+For the above reasons, studies on a cyber-attack detection method that can quickly and precisely deal with subspecies and unknown cyber-attacks and without human error are important in recent years.
 
 
 
-We focus on the detection of indiscriminate attacks like Internet-wide scan such as attacking and intruding to an unspecified number of Internet users.
-Here, we set up receivers (sensors) in our darknet---unused IP address blocks---and captured all the traffic arriving at the sensors to generate a dataset.
-A lot of cyber attacks like indiscriminately scattered network scans reached the darknet.
-Therefore, by analyzing the darknet rather than using another network dataset, it was easy to grasp what kind of network service was being targeted and the trend of global cyber attack.
-However, since the darknet sensor we operate did not return a response, it was difficult for a human to manually distinguish whether the received packet was intended for cyber attack.
-Accordingly, in this study, we worked on a mechanism to mechanically detect indiscriminate cyber attacks reaching darknets like network scans.
-The mechanism detected cyber attacks quickly and precisely including subspecies and unknown cyber attacks by using an unsupervised machine learning method, so that there is no human error.
+We focused on the detection of indiscriminate attacks like Internet-wide scan such as attacking and intruding to an unspecified number of Internet users.
+Here, we set up receivers (sensors) that do not respond to the darknet of unused IPs (IP address) block owned by us, observed all the traffic that arrives and used it as a dataset.
+A lot of cyber-attacks like indiscriminately scattered network scans reached the darknet.
+Therefore, by analyzing the darknet rather than using another network dataset, it was easy to grasp what kind of network service was being targeted and the trend of global cyber-attack.
+However, since the darknet sensor we operate did not return a response, it was difficult for a human to manually distinguish whether the received packet was intended for cyber-attack.
+Accordingly, in this study, we worked on a mechanism to mechanically detect indiscriminate cyber-attacks reaching darknets like network scans.
+The mechanism detected cyber-attacks quickly and precisely including subspecies and unknown cyber-attacks by using an unsupervised machine learning method, so that there is no human error.
 
 
 
 
 Since infected hosts (devices) forming a botnet behaved synchronously when they received commands from a command-and-control server~\cite{Akiyama}, our earlier method~\cite{Han} focused on cooperativeness between the source hosts.
 Since this method used the library of R language ``glasso''~\cite{Friedman_glasso}, this method is called ``{\it GLASSO} engine'' from the following for convenience.
-The {\it GLASSO} engine estimated the cooperativeness of all pairs of source hosts from the time pattern of the number of packets received from each source host in a certain time period in darknet traffic using the sparse structure learning algorithm ``Graphical Lasso''~\cite{Friedman,Ide}.
+The {\it GLASSO} engine estimated the cooperativity of all pairs of source hosts from the time pattern of the number of packets received from each source host in a certain time period in darknet traffic using the sparse structure learning algorithm ``Graphical Lasso''~\cite{Friedman,Ide}.
 The degree of cooperativeness in that time period was quantified into a numerical value and a time period in which the numerical value was anomaly high compared with other time periods was detected as an outlier~\cite{Han}.
 It could be seen that a strongly cooperated campaign was performed from many source hosts in the time period judged as an outlier.
-One of the causes of anomaly source host-to-host cooperativeness on darknet traffic was a cyber attack using Internet-wide scanning, and the {\it GLASSO} engine could detect such cyber attacks.
-The cooperativeness of host pairs mentioned here meant that there was no cooperativeness with that host pair when the time pattern of the number of packets received from each source host was conditionally independent between two hosts.
+One of the causes of anomaly source host-to-host cooperativeness on darknet traffic was a cyber-attack using Internet-wide scanning, and the {\it GLASSO} engine could detect such cyber-attacks.
+The cooperativeness of host pairs mentioned here meant that there was no cooperativity with that host pair when the time pattern of the number of packets received from each source host was conditionally independent between two hosts.
 This cooperativeness could be estimated by the graphical lasso algorithm.
 In addition, the graphical lasso could be expected to scrape off weak cooperativeness of host pair that depend on coincidence.
 Therefore, this engine would not need to consider the communication due to misconfigurations arriving at the darknet and the weak cooperativeness of the host pair, and it could be expected to estimate more essential cooperativeness.
@@ -89,31 +89,30 @@ Therefore, this engine would not need to consider the communication due to misco
 
 \noindent
 \textbf{Contribution.}\space\space
-Since the {\it GLASSO} engine in the earlier work~\cite{Han} was in a batch mode requiring 3 days' darknet traffic data to process; when considering the processing time, the result was delayed by more than 3 days until output.
+However, since the {\it GLASSO} engine in the earlier work~\cite{Han} was in a batch mode requiring 3 days' darknet traffic data to process; when considering the processing time, the result was delayed by more than 3 days until output.
 In other words, it could not be said that the batch-mode {\it GLASSO} engine could analyze darknet traffic promptly.
 Therefore, in this paper, we proposed an online processing algorithm of {\it GLASSO} engine and made outlier detection sequentially and in real-time.
 Also, we selected and evaluated important parameters in the {\it GLASSO} engine.
 Next, in order to shorten processing time and to be able to process more scalable, we devised at the stage of preprocessing.
 Then, the {\it GLASSO} engine was operated in real-time using live darknet traffic (raw packets) without delay, and the detection result was evaluated by destination TCP ports (by services).
-In general, it was difficult to distinguish whether a packet arriving at the darknet was intended for a cyber attack.
-Therefore, it was difficult to give out the ground truth of cyber attacks in the darknet, but for the evaluation, we made a correct answer table in the range we understood and evaluated detection result using limited ground truth.
+In general, it was difficult to distinguish whether a packet arriving at the darknet was intended for a cyber-attack.
+Therefore, it was difficult to give out the ground truth of cyber-attacks in the darknet, but for the evaluation, we made a correct answer table in the range we understood and evaluated detection result using limited ground truth.
 As a result, it was found that the number of true positive TCP ports was 31, the number of false negative TCP ports was 3, and the number of false positive TCP ports was 0, and it was found that the {\it GLASSO} engine detected the following network scan in the darknet: A network scan that distributed scanning from infected botnet hosts like Mirai, Hajime, etc. or self-propagating worm-type malware searching for the next infected target.
-To sum up, the proposed {\it GLASSO} engine was possible to quickly and precisely grasp indiscriminate cyber attacks like network scans in real-time, automatically, and we thought it would lead to ease a burden of network operation.
+To sum up, the proposed {\it GLASSO} engine was possible to quickly and precisely grasp indiscriminate cyber-attacks like network scans in real-time, automatically, and we thought it would lead to ease a burden of network operation.
 
 
 
 
 \section{Background}
-In this section, the overview of our fundamental tools, i.e., a darknet, graphical Gaussian model, and graphical lasso algorithm, are presented.
+In this section, we explained a darknet, graphical Gaussian model and graphical lasso algorithm for a better understanding of the {\it GLASSO} engine.
 
 \subsection{Darknet}
-The Internet can be categorized into two types of networks: livenet and darknet.
-A livenet is a network of a busy IP addresses, while a darknet is a network of unused IP addresses.
-We set up receivers (sensors) on our darknets and passively capture all the traffic arriving at these receivers.
-Most of the packets in the traffic are TCP packets with SYN flag on, i.e., TCP-SYN packets.
-TCP-SYN packets reaching a darknet are non-ordinary packets; these are often scans, backscatters caused by IP spoofing, or inintended packets sent by misconfigured network devices.
-The scans may be initiated by malware for indiscriminately locating the next victim candidates or by any other entities for investigating and researching the Internet.
-In this paper, a network scan that indiscriminately tried attacks and intrusions through vulnerable TCP ports is called a cyber attack, and a network scan that indiscriminately tried surveys and researches by organizations like Shodan and Censys is called a survey scan.
+The Internet is divided into a live network of a busy IPs block and a darknet of an unused IPs block.
+We set up receivers (sensors) that do not respond to darknet spaces owned by our organization and capture all the traffic (raw network packets).
+Most of the traffic that reached a darknet is TCP packets, most of them are SYN packets.
+Packets of the SYN flag reaching a darknet included in something wrong traffic like misconfigurations, and network scans indiscriminately trying cyber-attacks, intrusions, and surveys on the Internet space.
+Besides the packets of the SYN flag reaching a darknet included in similarly something wrong traffic like misconfigurations, and backscatters caused by IP spoofing.
+In this paper, a network scan that indiscriminately tried attacks and intrusions through vulnerable TCP ports is called a cyber-attack, and a network scan that indiscriminately tried surveys and researches by organizations like Shodan and Censys is called a survey scan.
 
 
 
@@ -143,14 +142,14 @@ Many studies using darknet had been carried out, and showed its usefulness on an
 Dainotti {\it et al.} developed and evaluated a methodology for removing spoofed traffic from both darknets and live networks, and contributed to support census-like analyses of IP address space utilization~\cite{Dainotti}.
 Durumeric {\it et al.} analyzed a large-scale darknet to investigate scanning activities, and identified patterns in large horizontal scanning operations~\cite{Durumeric}.
 Also, they presented an analysis of the latest network scanning on the overall landscape, and its influence, and countermeasures of the defender in detail.
-Fachkha {\it et al.} devised inference and characterization modules for extracting and analyzing cyber-physical systems (CPS) probing activities toward ample CPS protocols by correlating and analyzed various dimensions of a large amount of darknet data~\cite{Fachkha}.
+Fachkha {\it et al.} devised inference and characterization modules for extracting and analyzing cyber-physical systems (CPS) probing activities towards ample CPS protocols by correlating and analyzed various dimensions of a large amount of darknet data~\cite{Fachkha}.
 
 
 The {\it GLASSO} engine was an engine that detects cyber attacks by capturing the cooperativeness between source hosts reaching the darknet.
 Ban {\it et al.}~\cite{Ban} proposed an abrupt-change detection algorithm that detected botnet-probe campaigns with a high detection rate by exploring the temporal coincidence in botnet activities visible in darknet traffic.
 However, the dataset used in this abrupt-change detection algorithm processed traffic with only one destination TCP port, and it was not a real-time detection system.
 Since the {\it GLASSO} engine processed the entire live traffic without restriction, the range of the dataset was different from the abrupt-change detection algorithm.
-Actually, research using a darknet to detect cyber attacks of similar scale in the same dataset range as the {\it GLASSO} engine did not exist as far as we know and it was difficult to compare and evaluate.
+Actually, research using a darknet to detect cyber-attacks of similar scale in the same dataset range as the {\it GLASSO} engine did not exist as far as we know and it was difficult to compare and evaluate.
 
 
 
@@ -181,7 +180,7 @@ Also, $\mathbb{N}_0=\{0,1,2,\cdots\}$.
 
 Next, we obtain a precision matrix from the data matrix $\bm{D}_t$ using the graphical lasso algorithm and apply GGM.
 Then, a set of source host (variable) corresponds to a node set of a graph in the GGM, and a presence or absence of a dependence relationship of a source host pair (variable pair) corresponds to an edge set.
-The cooperativeness of host pairs meant that there was no cooperativeness with that host pair when the time pattern of the number of packets received from each source host was conditionally independent between two hosts.
+The cooperativeness of host pairs meant that there was no cooperativity with that host pair when the time pattern of the number of packets received from each source host was conditionally independent between two hosts.
 
 
 
@@ -283,19 +282,19 @@ Here, $length()$ function got the length of vectors.
 
 
 \subsection{Alert Judgment Method for Online Processing}
-In this section, we proposed an outlier detection method for discriminating alerts (outliers) from a sequence of graph density values $\bm{d}$ during online processing.
-It was checked how much the largest element occupies a whole sample variance in the sequence of graph density values $\bm{d}$, and when a ratio was large, the largest element was judged to be an outlier.
-The pseudo code of the alert judgment method was indicated in the Algorithm~\ref{alg2}.
-Here, $\sigma^{2}_{(i+1)}/\sigma^{2}_{(i)}<\theta$ was an outlier judgment formula, and $\theta \, (0\leq \theta \leq 1)$ was a threshold value of an outlier judgment formula.
-Also, $order()$ function returned a permutation which rearranges its first argument into ascending or descending order, $var()$ function returned a sample variance.
-From the above, we understood how to process the {\it GLASSO} engine and how to output alerts.
+In this section, we propose an outlier detection method for discriminating alerts (outliers) from a sequence of graph density values $\bm{d}$ during online processing.
+It is checked how much the largest element occupies a whole sample variance in the sequence of graph density values $\bm{d}$, and when a ratio is large, the largest element is judged to be an outlier.
+The pseudocode of the alert judgment method is indicated in the Algorithm~\ref{alg2}.
+Here, $\sigma^{2}_{(i+1)}/\sigma^{2}_{(i)}<\theta$ is an outlier judgment formula, and $\theta \, (0\leq \theta \leq 1)$ is a threshold value of an outlier judgment formula.
+Also, $order()$ function returns a permutation which rearranges its first argument into ascending or descending order, $var()$ function returns a sample variance.
+From the above, we understand how to process the {\it GLASSO} engine and how to output alerts.
 
 %\begin{subfigures*}
 %\begin{figure}
 %\vspace{0.1cm}
 %\end{figure}
 \begin{algorithm}[tb]
-\caption{Pseudo code for Alert Judgment Method}
+\caption{Pseudocode for Alert Judgment Method}
 \label{alg2}
 \begin{algorithmic}[1]
   \REQUIRE $\bm{d}\in\mathbb{R}^{K}, K, \theta$\\
@@ -378,7 +377,7 @@ $\theta$は1に近いほど外れ値を緩く判定し，0に近いほど外れ�
 In this section, we described a performance evaluation of the {\it GLASSO} engine.
 First, in order to improve the performance of the {\it GLASSO} engine, we considered a method of preliminarily excluding packets which were not interested in at the preprocessing stage without estimating cooperativeness between source hosts.
 Next, we actually operated the {\it GLASSO} engine in real-time and analyzed detected alert results.
-Then we evaluated a cyber attack detection accuracy and described the details of detected cyber attacks.
+Then we evaluated a cyber-attack detection accuracy and described the details of detected cyber-attacks.
 
 
 \subsection{Enhance Preprocessing}
@@ -397,6 +396,7 @@ In this section, the results of the {\it GLASSO} engine which operated for 1 mon
 Input parameters of the {\it GLASSO} engine used for the operation were set to $T=600 sec., M=12, K=432, \theta=0.98, r \in R ( = \{0.4, 0.5, 0.6, 0.7, 0.8, 0.9\}$.
 We considered only SYN packets, TCP and TCP ports 22, 23, 80, 81, 445, 2323, 3389, 5555, 8080, 50382, 50390, 52869 were excluded in advance as preprocessing.
 These TCP ports were constantly observed a large number of packets or source hosts before October 1, 2018.
+Also, a source host IPs usually had one IP address up to the fourth octet, but in order to reduce the number of $N$, in this experiment, the IP addresses up to the second octet were taken as one source host IPs.
 We used 8 different darknet sensors and operated the {\it GLASSO} engine in real-time for each sensor.
 This darknet sensor observed with different IPs blocks, the IPs observation size and source country were also different.
 As a result of the operation, a total of 1,634 alerts were obtained in real-time without delay.
@@ -424,7 +424,7 @@ Table~\ref{tab:sensor} shows the observation IP address size and the number of a
 \begin{tabular}{c|l}
 \hline
 Alert Type    & TCP ports (The Number of Alerts, First Detected Date) \\ \hline\hline
-\begin{tabular}[c]{@{}c@{}}Cyber attack\\(1,482 \\Alerts)\\(31 Ports)\end{tabular}         & \begin{tabular}[c]{@{}l@{}}21(13, 13:40 20th), 82(56, 10:10 7th), 83(9, 20:00 11th), 84(8, 00:30 12th), 85(25, 11:40 6th), 88(100, 18:20 1st), 110(3, 14:50 17th), \\443(143, 19:30 12th), 1701(1, 04:30 9th), 2480(4, 20:10 14th), 5358(309, 21:30 24th), 5379(27, 13:50 31st), 5431(26, 10:20 3rd),\\ 5900(2, 21:40 31st), 5984(3, 03:20 20th), 6379(4, 18:20 26th), 7379(25, 13:30 31st), 7547(27, 09:50 20th), 8000(78, 21:40 5th),\\ 8001(47, 22:40 5th), 8081(267, 21:00 10th), 8088(7, 06:10 2nd), 8181(69, 01:30 1st), 8291(17, 14:40 5th), 8443(47, 02:40 20th),\\ 8888(31, 20:30 5th), 9000(11, 01:30 2nd), 23023(5, 07:20 14th), 37215(100, 01:30 1st), 49152(11, 01:10 14th), 65000(7, 03:00 14th)\end{tabular}   \\ \hline
+\begin{tabular}[c]{@{}c@{}}Cyber-attack\\(1,482 \\Alerts)\\(31 Ports)\end{tabular}         & \begin{tabular}[c]{@{}l@{}}21(13, 13:40 20th), 82(56, 10:10 7th), 83(9, 20:00 11th), 84(8, 00:30 12th), 85(25, 11:40 6th), 88(100, 18:20 1st), 110(3, 14:50 17th), \\443(143, 19:30 12th), 1701(1, 04:30 9th), 2480(4, 20:10 14th), 5358(309, 21:30 24th), 5379(27, 13:50 31st), 5431(26, 10:20 3rd),\\ 5900(2, 21:40 31st), 5984(3, 03:20 20th), 6379(4, 18:20 26th), 7379(25, 13:30 31st), 7547(27, 09:50 20th), 8000(78, 21:40 5th),\\ 8001(47, 22:40 5th), 8081(267, 21:00 10th), 8088(7, 06:10 2nd), 8181(69, 01:30 1st), 8291(17, 14:40 5th), 8443(47, 02:40 20th),\\ 8888(31, 20:30 5th), 9000(11, 01:30 2nd), 23023(5, 07:20 14th), 37215(100, 01:30 1st), 49152(11, 01:10 14th), 65000(7, 03:00 14th)\end{tabular}   \\ \hline
 \begin{tabular}[c]{@{}c@{}}Survey Scan\\(57 Alerts)\\(16 Ports)\end{tabular} & \begin{tabular}[c]{@{}l@{}}17(1, 21:00 31st), 53(12, 01:10 20th), 102(6, 18:12 12th), 111(6, 00:00 27th), 990(1, 21:00 28th), 1900(4, 16:00 28th),\\ 3128(1, 18:20 26th), 3780(2, 21:00 25th), 4567(1, 05:40 28th), 5000(2, 01:30 31st), 5357(1, 17:30 31st), 5560(1, 10:30 30th),\\ 7657(1, 16:00 25th), 9200(2, 22:40 28th), 9981(1, 02:30 26th), 11211(15, 00:50 25th)\end{tabular}    \\ \hline
 \begin{tabular}[c]{@{}c@{}}One-dst\\Centralized\\(95 Alerts)\\(81 Ports)\end{tabular}      & \begin{tabular}[l]{@{}l@{}}99(1, 21:00 25th), 139(3, 14:00 28th), 321(1, 17:20 26th), 792(1, 20:40 25th), 1678(1, 20:10 28th), 1859(1, 19:20 25th),\\ 3227(1, 23:00 24th), 3407(1, 19:30 27th), 4466(5, 19:40 31st), 5601(1, 17:00 27th), 5777(1, 20:00 28th), 6821(1, 04:40 27th),\\ 7199(1, 00:10 27th), 8096(1, 22:30 31st), 8185(1, 19:20 28th), 8983(1, 04:10 31st), 10994(1, 14:10 30th), 11647(1, 01:11 31st),\\ 11876(1, 10:00 25th), 12385(1, 18:40 28th), 13750(1, 20:20 31st), 13804(1, 06:20 26th), 14401(1, 17:20 31st), 16964(1, 13:20 25th),\\ 17396(1, 15:00 28th), 17502(1, 06:50 20th), 19533(1, 05:10 26th), 20340(1, 23:30 26th), 20382(1, 19:30 31st), 20405(1, 21:40 28th),\\ 21221(1, 03:30 27th), 21490(1, 21:00 27th), 22063(1, 01:10 26th), 24357(1, 14:40 26th), 25024(1, 17:50 25th), 25476(1, 05:20 28th),\\ 26137(1, 01:30 29th), 26644(1, 22:40 27th), 26934(1, 23:40 24th), 27200(1, 14:50 14th), 27910(1, 14:20 20th), 29217(1, 17:10 25th),\\ 31632(1, 19:20 29th), 34149(1, 01:00 30th), 35669(1, 17:10 30th), 35927(1, 23:10 25th), 36064(1, 16:20 26th), 36678(1, 06:10 25th),\\ 37822(1, 20:40 25th), 38718(1, 05:30 29th), 39420(1, 00:40 28th), 40500(4, 14:40 27th), 41939(1, 19:30 26th), 43160(6, 12:00 28th),\\ 43361(1, 21:40 29th), 43566(1, 08:30 30th), 46928(1, 17:30 30th), 47149(1, 18:40 20th), 48449(1, 14:40 25th), 49328(1, 05:40 25th),\\ 49516(1, 02:00 25th), 52204(1, 20:20 27th), 52854(1, 15:30 30th), 53518(1, 19:10 29th), 53557(1, 02:40 20th), 55186(1, 08:20 26th),\\ 56011(1, 00:50 21st), 56409(1, 20:50 27th), 56499(1, 21:10 24th), 57343(1, 20:50 29th), 57762(1, 07:10 26th), 59751(1, 00:50 28th),\\ 60850(1, 22:30 24th), 60917(1, 10:20 20th), 60928(1, 05:10 31st), 62627(1, 14:40 29th), 63591(1, 13:50 26th), 63918(1, 01:00 26th),\\ 65032(1, 18:00 29th), 65165(1, 01:20 28th), 65238(1, 14:10 28th) \end{tabular} \\ \hline
 \end{tabular}
@@ -436,7 +436,7 @@ Alert Type    & TCP ports (The Number of Alerts, First Detected Date) \\ \hline\
 \subsection{Analysis of Alert Result}
 By analyzing alerts obtained from the {\it GLASSO} engine for one month in October 2018 for each TCP port, a total of 128 TCP ports were obtained among 1,634 alerts, and these were broadly classified into the following three types.
 \begin{enumerate}
-  \item Cyber attack: a network scan that indiscriminately tried attacks and intrusions through vulnerable TCP ports in order for multiple hosts already infected with malware to search for a next infection target.
+  \item Cyber-attack: a network scan that indiscriminately tried attacks and intrusions through vulnerable TCP ports in order for multiple hosts already infected with malware to search for a next infection target.
   \item Survey scan: a network scan that indiscriminately tried surveys and researches to TCP ports using multiple hosts by organizations such as Shodan, Censys, etc.
   \item {\it One-dst-centralized}: a phenomenon in which packets are concentrated from multiple source hosts to one darknet destination IPs and a TCP port suddenly, due to some cause.
 \end{enumerate}
@@ -448,18 +448,18 @@ In other words, there was no inclusive relationship clearly between an {\it one-
 When both of the following two ratios were greater than 70\% in the alerts, the alert was judged an {\it one-dst-centralized}: (1) The ratio of the number of packets of the destination most received and the total number of packets, (2) The ratio of the number of source hosts of destinations where the source host was most observed and the total number of source hosts.
 As a result of applying this criterion to all alerts, 95 alerts out of a total of 1,634 alerts were found to be an {\it one-dst-centralized}, 81 out of a total of 128 alerts were divided into an {\it one-dst-centralized}.
 In this time, we could not grasp exactly with our darknet what an {\it one-dst-centralized} was intended traffic, only weak guesses that there was a possibility of a routing mistake.
-However, since this paper covered the detection of cyber attacks, an {\it one-dst-centralized} was not considered.
+However, since this paper covered the detection of cyber-attacks, an {\it one-dst-centralized} was not considered.
 
 
 
 Next, it could be assumed that 1,539 remaining alerts (47 remaing TCP ports) were network scans since many source hosts sent packets to a specific TCP port of many destination IPs cooperatively.
-There were two kinds of network scans of SYN packet reaching the darknet: cyber attacks and survey scans.
-In the case of an alert by survey scanners, since a size of the source hosts tended to be smaller than an alert by cyber attacks, we focused on a size of the source hosts and considered dividing it into cyber attacks and survey scans.
+There were two kinds of network scans of SYN packet reaching the darknet: cyber-attacks and survey scans.
+In the case of an alert by survey scanners, since a size of the source hosts tended to be smaller than an alert by cyber-attacks, we focused on a size of the source hosts and considered dividing it into cyber-attacks and survey scans.
 In many cases, a survey scanner could be found from HTTP connection and a host name obtained by reverse lookup of a source host IPs.
 If there was a high proportion of survey scanners among the alert's source hosts, that alert was considered to be an alert by survey scanners.
-As a result of examining alerts in which survey scanners ratio exceeded 50\%, we divided that an alert whose size of source host was smaller than 20 was a survey scan, otherwise it was a cyber attack.
-Here, in the case of cyber attacks, the ratio of a survey scanner was about 20\% at most.
-Finally, we were divided into alerts with 57 survey scans (16 TCP ports) and alerts with 1,482 cyber attacks (31 TCP ports).
+As a result of examining alerts in which survey scanners ratio exceeded 50\%, we divided that an alert whose size of source host was smaller than 20 was a survey scan, otherwise it was a cyber-attack.
+Here, in the case of cyber-attacks, the ratio of a survey scanner was about 20\% at most.
+Finally, we were divided into alerts with 57 survey scans (16 TCP ports) and alerts with 1,482 cyber-attacks (31 TCP ports).
 Table~\ref{tab:result_type} shows a result of dividing all alerts obtained during the month of October 2018 into three types for each TCP port.
 
 
@@ -468,7 +468,7 @@ Table~\ref{tab:result_type} shows a result of dividing all alerts obtained durin
 
 
 
-\subsection{Evaluation of Cyber attack Detection Accuracy}
+\subsection{Evaluation of Cyber-attack Detection Accuracy}
 From the previous section, it was possible to divide 31 attacked TCP ports out of all {\it GLASSO} engine alerts in October 2018.
 In this section, we measured a detection accuracy of how many of the 31 TCP ports were correct.
 In order to confirm the correct/incorrect answer, we made an answer table of attacked TCP ports in our darknet in October 2018, as far as we knew at the beginning of December 2018.
@@ -477,17 +477,17 @@ We comprehensively looked at various information such as information contained i
 
 We used the limited answer table to check the answer of attacked TCP ports detected in real-time from the {\it GLASSO} engine.
 The results of the answers were shown in Table~\ref{tab:answer}.
-Table~\ref{tab:answer} shows TCP port information of true positive, false negative, false positive according to three types of cyber attack.
+Table~\ref{tab:answer} shows TCP port information of true positive, false negative, false positive according to three types of cyber-attack.
 Since this limited answer table recorded only the attacked TCP port, that is, correct answer, there was no true negative in such evaluation.
 As a result, we got 31 true positives, 3 false negatives and 0 false positives of TCP ports.
-As shown in Table~\ref{tab:accuracy}, the accuracy of cyber attack detection in October 2018 of the {\it GLASSO} engine was 91.2\% accuracy, 100\% precision, 91.2\% recall, 95.4\% F-measure.
+As shown in Table~\ref{tab:accuracy}, the accuracy of cyber-attack detection in October 2018 of the {\it GLASSO} engine was 91.2\% accuracy, 100\% precision, 91.2\% recall, 95.4\% F-measure.
 Also, there was one attacked TCP port detected only by the {\it GLASSO} engine in true positives (TCP port number 1701).
-It was a cyber attack event that we missed due to human error when making the answer table.
-Finally, please note that unknown cyber attacks will be clarified in the future and false negatives may increase.
+It was a cyber-attack event that we missed due to human error when making the answer table.
+Finally, please note that unknown cyber-attacks will be clarified in the future and false negatives may increase.
 
 \begin{table}[tb]
   \begin{center}
-  \caption{Checking Answers using Limited Answer Table According to Types of Cyber attack (TCP port)}
+  \caption{Checking Answers using Limited Answer Table According to Types of Cyber-attack (TCP port)}
   \label{tab:answer}
 \begin{tabular}{c||c|c|c}
 \hline
@@ -503,7 +503,7 @@ Total  & 31  & 3  & 0   \\ \hline
 
 \begin{table}[tb]
   \begin{center}
-  \caption{Accuracy of Cyber attack Detection of the {\it GLASSO} Engine}
+  \caption{Accuracy of Cyber-attack Detection of the {\it GLASSO} Engine}
   \label{tab:accuracy}
 \begin{tabular}{c|c|c|c}
 \hline
@@ -518,9 +518,9 @@ Total  & 31  & 3  & 0   \\ \hline
 
 
 
-\subsection{Details of the Detected Cyber attacks}
-In this section, we introduced the details of detected cyber attacks according to three attack types: IoT malware, router vulnerabilities, and other vulnerabilities.
-There were two types of malware used for cyber attacks: (1) malware that forms a botnet and receives a command from a command-and-control server and executes a network scan, (2) malware such as worms, computer viruses, etc. that spreads network scanning on a wide area to self-propagate.
+\subsection{Details of the Detected Cyber-attacks}
+In this section, we introduced the details of detected cyber-attacks according to three attack types: IoT malware, router vulnerabilities, and other vulnerabilities.
+There were two types of malware used for cyber-attacks: (1) malware that forms a botnet and receives a command from a command-and-control server and executes a network scan, (2) malware such as worms, computer viruses, etc. that spreads network scanning on a wide area to self-propagate.
 
 
 \subsubsection{IoT Malware}
@@ -532,7 +532,7 @@ Finally, it is reported that the HNS scanned TCP port 23, 80, 8080, 2480, 5984 a
 
 
 \subsubsection{Router Vulnerability}
-The true positive 11 TCP ports of router vulnerability in Table~\ref{tab:answer} were divided into cyber attacks against vulnerabilities that presented in the router products of five manufacturers~\cite{Huawei,Netlab_BCM,Netlab_MikroTik}.
+The true positive 11 TCP ports of router vulnerability in Table~\ref{tab:answer} were divided into cyber-attacks against vulnerabilities that presented in the router products of five manufacturers~\cite{Huawei,Netlab_BCM,Netlab_MikroTik}.
 First, vulnerabilities existed in the router product of manufacturer A, and as a result of infecting many routers with malware, network scannings by a large number of routers were performed in a short time in several TCP ports 21, 110, 443, 8291, 23023, 65000.
 Next, other network scans with features of Mirai were observed from infected routers using the vulnerability of manufacturer B, C, D's router products (TCP ports 8001, 8081, 8181, 37215).
 Finally, using the vulnerability of manufacturer E's UPnP (Universal Plug and Play), many router products using manufacturer E's UPnP were hijacked, and network scans were observed from infected routers (TCP port 5431).
@@ -540,39 +540,41 @@ Finally, using the vulnerability of manufacturer E's UPnP (Universal Plug and Pl
 
 
 \subsubsection{Other Vulnerability}
-表~\ref{tab:answer}のその他脆弱性の正解TCPポート計6個は大きく4つのサービスに対する脆弱性に対するサイバー攻撃に分かれる~\cite{Imperva}．
-あるNoSQLデータベースに脆弱性が存在し，そのデータベースを探索するためのスキャン活動が観測された．(TCPポート5379, 6379, 7379)
-その他にもL2TP VPN(Layer 2 Tunneling Protocol Virtual Private Network)，VNC(Virtual Network Computing)，Supermicrio BMC(Baseboard Management Controller)といったサービスを探索するためのスキャン活動が観測された．(TCPポート1701, 5900, 49152)
+The true positive 6 TCP ports of other vulnerability in Table~\ref{tab:answer} were roughly divided into cyber-attacks against vulnerabilities against four application services~\cite{Imperva}.
+First, a vulnerability existed in a NoSQL database service, and network scans for searching that database were observed (TCP ports 5379, 6379, 7379).
+In addition, network scans for searching services such as L2TP VPN (Layer 2 Tunneling Protocol Virtual Private Network), VNC (Virtual Network Computing), Supermicro BMC (Baseboard Management Controller) were observed (TCP ports 1701, 5900, 49152).
 
 
-2018年10月におけるサイバー攻撃の多くは，それより以前から恒常的or定期的に観測されていた既知のマルウェアもしくは既知の脆弱性を狙ったサイバー攻撃である．
-そのような場合，2018年10月の中でサイバー攻撃を検知した時期が適切かどうか語るのは大きな意味を持たない．
-ただし，2018年10月において新たな傾向を示すサイバー攻撃に対しては検知時期を評価するのは意味がある．
-そのような意味では，A社のルータ製品がいくつかのTCPポートにスキャンを仕掛けたのは2018年10月において新たな傾向のサイバー攻撃であり，{\it GLASSO}エンジンは送信元ホスト数がピークを迎えたときを，全て適切な時期に検知している．
+Many of the cyber-attacks in October 2018 were attacks using known malware or known vulnerabilities that were constantly or regularly observed before that time.
+In such a case, it is not meaningful to discuss whether the timing of detecting cyber-attacks in October 2018 was appropriate or not.
+However, it was meaningful to evaluate the detection timing for cyber-attacks that showed a new trend in October 2018.
+In that sense, it was a new trend cyber-attack in October 2018 that manufacturer A's infected router product launched scanning to several TCP ports.
+At this point, the {\it GLASSO} engine detected when the number of source hosts peaked in this scan campaign, all at an appropriate time.
 
 
 
 %\section{考察}
 %本節では見逃し，一点集中型，survey scanに対する考察を行う．
 
-\section{見逃しに対する考察}
-本節では今回見逃した3個のTCPポートに関連するサイバー攻撃に対して考察を行う．
-TCPポート444，8010番に対してはMiraiの特徴を持ったスキャン活動が観測され，TCPポート2004番に対してはあるCMS(Content Management System)サービスを探索するためのスキャン活動が観測された．
-10分間のユニーク送信元ホスト数をダークネットセンサ別に見てみると，8010番は多いときは161送信元ホストも観測されている反面，444,2004番はそれぞれ高々19,23個に達しない．
+\section{Consideration on False Negative}
+In this section, we considerate about the false negative in this time.
+Scans with the features of Mirai were observed to TCP port numbers 444 and 8010, and scans for searching CMS (Content Management System) service to TCP port number 2004 were observed.
+Looking at the number of source hosts for 10 minutes by each darknet sensor, 161 source hosts were observed when TCP port 8010 is a peak, while TCP ports 444 and 2004 were observed at most 19, 23 source hosts.
 
-まず，8010番を見逃した原因を考えると，現在はアラートが発行されたタイムスロットに対して送信元ホストの数が1番多いTCPポートに対してのみアラートとして扱っていることが考えられる．
-1番目以降に送信元ホストの数が多いTCPポートが1番目のTCPポートと比べて送信元ホスト数に差があまりないのであれば，1番目以降のTCPポートに対してもアラートとして扱うようにすると，TCPポート8010番は簡単に検知できる．
-しかし，この対策は誤検知を増やす可能性がある．
 
-送信元ホスト数が少ないと協調性は薄くなり，{\it GLASSO}エンジンで444, 2004番のような事象を捉えることは難しくなる．
-このような見逃しの対策として，送信元ホストの数を増やせるような方法や少ない数の送信元ホスト間の協調性も捉えられるような方法を考えると，以下の3点が考えられる．
+First of all, it is the reason why we missed TCP port 8010 because of handling only TCP ports with the largest number of source hosts in outlier time slots as alerts.
+TCP port 8010 can be easily detected if it is considered as an alert even for the TCP port which has the second and the subsequent largest number of source hosts.
+However, this measure may increase false positives.
+
+
+
+Next, if the number of source hosts is small, its cooperativeness will become thin and difficult to capture campaigns like TCP ports 444, 2004 by the {\it GLASSO} engine.
+As a countermeasure for such false negatives, considering a method that can increase the number of source hosts and a method that can capture cooperativeness between a small number of source hosts, the following three points are conceivable.
 \begin{enumerate}
-  \item 送信元ホストの数が1番多いTCPポート以降の2番目
-  \item 送信元ホストの数を縮小せず，第4オクテットまでのIPアドレスを1つの送信元ホストとする．
-  \item より大きい規模のダークネットセンサを用いる．
-  \item TCPポート除外をよりこまめに行う．
+  \item Do not reduce the number of source hosts and make the IP addresses up to the fourth octet as one source host IPs.
+  \item Use a larger IPs size of darknet sensors.
+  \item Frequently perform TCP port exclusion in the preprocessing.
 \end{enumerate}
-上記の対策を適用し，今回見逃した3個のTCPポートに関するサイバー攻撃が{\it GLASSO}エンジンで捉えられるのか確かめることは今後の課題とする．
 
 
 %\subsection{検知時期考察}
@@ -588,15 +590,16 @@ TCPポート444，8010番に対してはMiraiの特徴を持ったスキャン�
 
 
 \section{Conclusion}
-先行研究での{\it GLASSO}エンジンではできなかったリアルタイム処理を可能にし，より迅速な対応が可能なネットワークスキャンサイバー攻撃検知エンジンを提案した．
-{\it GLASSO}エンジンから得られるアラートは3タイプ(サイバー攻撃，survey scan，一点集中型)あることが分かり，適当な基準を立て分別することで，サイバー攻撃だけのアラートを判別することができた．
-我々は限定的なground truthを作成し，{\it GLASSO}エンジンのサイバー攻撃検知精度を評価し，そのサイバー攻撃の詳細を紹介した．
-また，従来の方法では検知できなかったものを検知することもできた．
-{\it GLASSO}エンジンはいくつかのサイバー攻撃を見逃したが，考察を行い対策を考えた．
+We have proposed a cyber-attack detection engine which enables real-time processing and respond more quickly that could not be done with the {\it GLASSO} engine in the earlier work.
+It was found that there are 3 types of alerts obtained from the {\it GLASSO} engine (cyber-attack, survey scan, {\it one-dst centralized}), and by sorting proper criteria, it was possible to separate alerts into 3 types.
+We made limited ground truth, evaluated cyber-attack detection accuracy of the {\it GLASSO} engine, and introduced the details of that cyber-attacks.
+In addition, it was able to detect what could not be detected by the conventional method.
+The {\it GLASSO} engine missed several cyber-attacks, but we considered about counter-measures.
 
-今後の予定として，見逃しを減らすように{\it GLASSO}エンジンを調整し，長期間に渡る運用を行うことで，検知時期の適切さを適当な基準で評価を行いたい．
-そして，一点集中型がどういうものかダークネット以外の別のデータセット(ハニーポットなど)を用いて真相を調べたい．
-最後に，{\it GLASSO}エンジンはサイバー攻撃検知のみならず，Survey scannerの検知ができることが分かったため，拡張研究としてsurvey scannerの検知を行いたい．
+
+As a future work, we would like to adjust the {\it GLASSO} engine so as to reduce overlooking and evaluate the adequacy of the detection time on an appropriate basis by operating over a long period of time.
+Then, we would like to investigate the truth of {\it one-dst centralized}) using another dataset (such as honeypot) other than darknet.
+Finally, since it was found that the {\it GLASSO} engine can detect not only cyber-attacks but also survey scanners, we would like to detect survey scanners as an extension study.
 
 
 
