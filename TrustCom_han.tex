@@ -211,8 +211,8 @@ Therefore, in the rest of this paper, we would improve the defects mentioned abo
 \section{{\it GLASSO} Engine (Online-mode)}
 In this section, we introduce a newly proposed {\it GLASSO} engine for real-time analysis: Online processing algorithm and alert judgment method.
 The input of the {\it GLASSO} engine is packet capture (PCAP) file of darknet traffic for T seconds and other parameters $M, r \in R ( = \{r_1, r_2, \cdots, r_s\} ), \bm{d}^{(r)}, K, \theta$, and the output is alert information generated from time slots judged to be outliers.
-This alert information included information such as timestamp, a destination TCP port being targeted, source host IPs that sent the packet at its destination TCP port, and its amount.
-The targeted TCP port referred to the TCP port with the largest number of source hosts that sent packets to a destination TCP port in that time slot.
+This alert information include information such as timestamp, a destination TCP port being targeted, source host IPs that sent the packet at its destination TCP port, and its amount.
+The targeted TCP port refers to the TCP port with the largest number of source hosts that sent packets to a destination TCP port in that time slot.
 
 
 %\begin{figure}[tb]
