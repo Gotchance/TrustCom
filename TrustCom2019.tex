@@ -56,7 +56,7 @@ Real-time malware activity detection, Darknet traffic analysis, Outlier detectio
 
 \section{Introduction}
 
-The number of cyber attacks have been growing, and they often use malware as their tool.
+The number of cyber attacks has been growing, and they often use malware as their tool.
 %and their types have been diversified in recent years
 To minimize the impact of cyber attacks, it is important to quickly and precisely grasp actual behaviors of malware on the Internet.
 Many of intrusion detection systems and firewalls have already implemented signature based and/or whitelist/blacklist based access control functions, but these cannot cope with unknown malware variants and brand-new malware.
@@ -82,7 +82,7 @@ This approach is robust to noise:  packets that accidentally arrive at our darkn
 Moreover, this approach ignores activities with weak cooperativeness.
 
 However, since the {\it GLASSO} engine in~\cite{Han} works in a batch mode and requires 3-day darknet traffic to process, the analysis result will not be provided in real time and will be delayed by more than 3 days.
-Therefore, in this paper, we propose an online processing algorithm of {\it GLASSO} engine that extends our earlier method~\cite{Han}, making it possible to detect the ontliers sequentially and in real-time.
+Therefore, in this paper, we propose an online processing algorithm of {\it GLASSO} engine that extends our earlier method~\cite{Han}, making it possible to detect the outliers sequentially and in real-time.
 In our evaluation, we measure the detection performance of the proposed method with our proof-of-concept implementation to demonstrate its feasibility and effectiveness in terms of detecting the rise of new malware activities in real-time.
 For this evaluation, we manually prepared the list of malicious events and the port numbers they used; these events and port numbers should be identified by the proposed algorithm.
 With the list, we evaluate the detection performance of {\it GLASSO} engine and demonstrate its feasibility and usefulness.
@@ -388,6 +388,7 @@ Here, although there was a possibility that a slight deterioration in accuracy m
 
 
 \subsection{Enhance Preprocessing}
+
 We pre-excluded a destination TCP port that constantly observed packets from a large number of packets or source hosts for a long time.
 Such destination TCP ports could easily be noticed by anyone, and generally, those were kept observing for a while without a detection method.
 For the same reason, packets addressed to TCP ports intensively observed as alerts were excluded in advance.
@@ -399,6 +400,7 @@ We regularly updated such work automatically.
 
 
 \subsection{Real-time Operation of {\it GLASSO} Engine}
+
 In this section, the results of the {\it GLASSO} engine which operated for 1 month in October 2018 were shown.
 Input parameters of the {\it GLASSO} engine used for the operation were set to $T=600$ {\it (sec.)}, $M=12, K=432, \theta=0.98, r \in R ( = \{0.4, 0.5, 0.6, 0.7, 0.8, 0.9\}$.
 We considered only SYN packets, TCP and TCP ports 22, 23, 80, 81, 445, 2323, 3389, 5555, 8080, 50382, 50390, 52869 were excluded in advance as preprocessing.
@@ -526,19 +528,20 @@ Total  & 31  & 3  & 0   \\ \hline
 
 
 \subsection{Details of the Detected Malware Activity}
-In this section, we introduced the details of detected malware activities according to three attack types: IoT malware, router vulnerabilities, and other vulnerabilities.
-There were two types of malware used for cyber attacks: (1) malware that forms a botnet and receives a command from a command-and-control server and executes a network scan, (2) malware such as worms, computer viruses, etc. that spreads network scanning on a wide area to self-propagate.
+
+In this section, we discuss the details of detected malware activities according to three attack types: IoT malware, router vulnerabilities, and other vulnerabilities.
+There were two types of malware used for cyber attacks: (1) malware that forms a botnet and receives a command from a C2 server and executes a network scan, (2) malware such as worms, computer viruses, etc. that spreads network scanning on a wide area to self-propagate.
 
 
 \subsubsection{IoT Malware}
-The true positive 14 TCP ports of IoT malware type in Table~\ref{tab:answer} were roughly divided into three types of malware: Mirai, Hajime, HNS (Hide and Seek).
-First of all, the Mirai scanned many web-based TCP ports of port 80 and 8000 series and were spreading more and more to scan new web-based TCP ports.
+
+The true positive 14 TCP ports of IoT malware type in Table~\ref{tab:answer} were roughly divided into three types of malware: Mirai, Hajime, and HNS (Hide and Seek).
+First, the Mirai scanned many web-based TCP ports of port 80 and 8000 series and were spreading more and more to scan new web-based TCP ports.
 Next, the Hajime regularly scanned TCP ports 5358, 9000.
 Finally, it is reported that the HNS scanned TCP port 23, 80, 8080, 2480, 5984 and random port~\cite{Netlab_HNS}.
 
-
-
 \subsubsection{Router Vulnerability}
+
 The true positive 11 TCP ports of router vulnerability in Table~\ref{tab:answer} were divided into malware activities against vulnerabilities that presented in the router products of five manufacturers~\cite{Huawei,Netlab_BCM,Netlab_MikroTik}.
 First, vulnerabilities existed in the router product of manufacturer A, and as a result of infecting many routers with malware, network scannings by a large number of routers were performed in a short time in several TCP ports 21, 110, 443, 8291, 23023, 65000.
 Next, other network scans with features of Mirai were observed from infected routers using the vulnerability of manufacturer B, C, D's router products (TCP ports 8001, 8081, 8181, 37215).
@@ -564,6 +567,7 @@ At this point, the {\it GLASSO} engine detected when the number of source hosts 
 %本節では見逃し，一点集中型，survey scanに対する考察を行う．
 
 \section{Consideration on False Negative}
+
 In this section, we considerate about the false negative in this time.
 Scans with the features of Mirai were observed to TCP port numbers 444 and 8010, and scans for searching CMS (Content Management System) service to TCP port number 2004 were observed.
 Looking at the number of source hosts for 10 minutes by each darknet sensor, 161 source hosts were observed when TCP port 8010 is a peak, while TCP ports 444 and 2004 were observed at most 19, 23 source hosts.
@@ -597,26 +601,28 @@ As a countermeasure for such false negatives, considering a method that can incr
 
 
 \section{Conclusion}
-We have proposed a malware activity detection engine which enables real-time processing and respond more quickly that could not be done with the {\it GLASSO} engine in the earlier work.
-It was found that there are 3 types of alerts obtained from the {\it GLASSO} engine (cyber attack, survey scan, {\it one-dst centralized}), and by sorting proper criteria, it was possible to separate alerts into 3 types.
-We made limited ground truth, evaluated malware activity detection accuracy of the {\it GLASSO} engine, and introduced the details of that malware activities.
-In addition, it was able to detect what could not be detected by the conventional method.
-The {\it GLASSO} engine missed several malware activities, but we considered about counter-measures.
 
+The proposed {\it GLASSO} engine, unlike our earlier work~\cite{Han}, makes it possible to detect new malware activities in real time and thus enables us to respond situations more quickly.
+Various evaluation have been conducted to demonstrate the effectiveness of the engine.
+We clarified that the engine produced alerts for three types of activities, i.e., cyber attack, survey scan, and {\it one-dst centralized}, and they can be properly distinguished by preparing proper criteria.
+We made limited ground truth by manual analysis, with which we evaluated the malware activity detection performance of the engine and analyzed the details of the detected activities.
+Moreover, the engine detected anomalous events that could not have been detected by the conventional method.
+Although the engine suffers from some false negatives, we believe it could be alleviated by properly preparing the environment.
+Therefore, we conclude that the proposed {\it GLASSO} engine can automatically and precisely grasp indiscriminate cyber attacks like network scans in real-time.
 
-As a future work, we would like to adjust the {\it GLASSO} engine so as to reduce overlooking and evaluate the adequacy of the detection time on an appropriate basis by operating over a long period of time.
-Then, we would like to investigate the truth of {\it one-dst centralized}) using another dataset (such as honeypot) other than darknet.
+This work is yet to be improved further.
+First, {\it GLASSO} engine could be optimized further to reduce false negatives.
+Second, pilot operation with the engine should be also conducted to evaluate its practical effectiveness over a long period of time.
+Third, The phenomenon, we call as {\it one-dst centralized}, remains unclear; further investigation on this phenomenon should be conducted using another dataset generated from honeypot in addition to darknet.
 Finally, since it was found that the {\it GLASSO} engine can detect not only cyber attacks but also survey scanners, we would like to detect survey scanners as an extension study.
+Through these work, we hope to streamline security operations and reduce the burden of network security operators and incident response teams.
 
-
-
-To sum up, the proposed {\it GLASSO} engine was possible to quickly and precisely grasp indiscriminate cyber attacks like network scans in real-time, automatically, and we thought it would lead to ease a burden of network security operation and security incident response.
 
 
 
 
 \section*{Acknowledgment}
-The authors thank associate Prof. K. Yoshioka from the Yokohama National University and  Prof. N. Murata from the Waseda Univeristy for their valuable comments.
+The authors thank associate Prof. K. Yoshioka from the Yokohama National University and  Prof. N. Murata from the Waseda University for their valuable comments.
 
 
 \begin{thebibliography}{99}
