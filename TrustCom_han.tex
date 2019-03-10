@@ -400,14 +400,14 @@ In this section, the results of the {\it GLASSO} engine which operated for 1 mon
 Input parameters of the {\it GLASSO} engine used for the operation were set to $T=600$ {\it (sec.)}, $M=12, K=432, \theta=0.98, r \in R ( = \{0.4, 0.5, 0.6, 0.7, 0.8, 0.9\})$.
 We considered only TCP-SYN packets and TCP ports 22, 23, 80, 81, 445, 2323, 3389, 5555, 8080, 50382, 50390, 52869 were excluded in the preprocessing phase.
 These TCP ports constantly received a large number of packets from various source hosts before September to October 1, 2018.
-Also, a source host IP address usually had one IP address up to the fourth octet, but in order to reduce the number of $N$, in this experiment, the IP addresses up to the second octet were taken as one source host IP address.
+Also, an IP address of source host is one IPv4 address up to the fourth octet, but in order to reduce the number of source hosts $N$, in this experiment, the IPv4 address up to the second octet was taken as one IP address.
 We used 8 different darknet sensors and operated the {\it GLASSO} engine in real-time for each sensor.
 This darknet sensor observed with different IP address blocks, the IP address observation size and source country were also different.
 As a result of the operation, a total of 1,634 alerts were obtained in real-time without delay.
 Table~\ref{tab:sensor} shows the number of observed IP address and that alerts for each of the eight darknet sensors.
 
 \begin{table}[tb]
-  \begin{center}
+  \centering
     \caption{The Number of Observed IP Address and Alerts for Each Darknet Sensor}
   \begin{tabular}{c|c|c||c|c|c} \hline
   Sensor & \begin{tabular}[c]{@{}c@{}}Observed\\IP Address\end{tabular} &  Alerts & Sensor & \begin{tabular}[c]{@{}c@{}}Observed\\IP Address\end{tabular} & Alerts \\ \hline\hline
@@ -418,12 +418,11 @@ Table~\ref{tab:sensor} shows the number of observed IP address and that alerts f
   D & 4,096 & 460 & H & 2,045 & 276 \\ \hline
   \end{tabular}
   \label{tab:sensor}
-  \end{center}
 \end{table}
 
 
 \begin{table*}[tb]
-  \begin{center}
+  \centering
   \caption{Result of Dividing All Alerts of the {\it GLASSO} Engine in October 2018 into Three Types for Each TCP Port}
   \label{tab:result_type}
 \begin{tabular}{c|l}
@@ -433,7 +432,6 @@ Alert Type    & TCP ports (The Number of Alerts, First Detected Date) \\ \hline\
 \begin{tabular}[c]{@{}c@{}}Survey Scan\\(57 Alerts)\\(16 Ports)\end{tabular} & \begin{tabular}[c]{@{}l@{}}17(1, 21:00 31st), 53(12, 01:10 20th), 102(6, 18:12 12th), 111(6, 00:00 27th), 990(1, 21:00 28th), 1900(4, 16:00 28th),\\ 3128(1, 18:20 26th), 3780(2, 21:00 25th), 4567(1, 05:40 28th), 5000(2, 01:30 31st), 5357(1, 17:30 31st), 5560(1, 10:30 30th),\\ 7657(1, 16:00 25th), 9200(2, 22:40 28th), 9981(1, 02:30 26th), 11211(15, 00:50 25th)\end{tabular}    \\ \hline
 \begin{tabular}[c]{@{}c@{}}Sporadically\\Focused\\Traffic\\(95 Alerts)\\(81 Ports)\end{tabular}      & \begin{tabular}[l]{@{}l@{}}99(1, 21:00 25th), 139(3, 14:00 28th), 321(1, 17:20 26th), 792(1, 20:40 25th), 1678(1, 20:10 28th), 1859(1, 19:20 25th),\\ 3227(1, 23:00 24th), 3407(1, 19:30 27th), 4466(5, 19:40 31st), 5601(1, 17:00 27th), 5777(1, 20:00 28th), 6821(1, 04:40 27th),\\ 7199(1, 00:10 27th), 8096(1, 22:30 31st), 8185(1, 19:20 28th), 8983(1, 04:10 31st), 10994(1, 14:10 30th), 11647(1, 01:11 31st),\\ 11876(1, 10:00 25th), 12385(1, 18:40 28th), 13750(1, 20:20 31st), 13804(1, 06:20 26th), 14401(1, 17:20 31st), 16964(1, 13:20 25th),\\ 17396(1, 15:00 28th), 17502(1, 06:50 20th), 19533(1, 05:10 26th), 20340(1, 23:30 26th), 20382(1, 19:30 31st), 20405(1, 21:40 28th),\\ 21221(1, 03:30 27th), 21490(1, 21:00 27th), 22063(1, 01:10 26th), 24357(1, 14:40 26th), 25024(1, 17:50 25th), 25476(1, 05:20 28th),\\ 26137(1, 01:30 29th), 26644(1, 22:40 27th), 26934(1, 23:40 24th), 27200(1, 14:50 14th), 27910(1, 14:20 20th), 29217(1, 17:10 25th),\\ 31632(1, 19:20 29th), 34149(1, 01:00 30th), 35669(1, 17:10 30th), 35927(1, 23:10 25th), 36064(1, 16:20 26th), 36678(1, 06:10 25th),\\ 37822(1, 20:40 25th), 38718(1, 05:30 29th), 39420(1, 00:40 28th), 40500(4, 14:40 27th), 41939(1, 19:30 26th), 43160(6, 12:00 28th),\\ 43361(1, 21:40 29th), 43566(1, 08:30 30th), 46928(1, 17:30 30th), 47149(1, 18:40 20th), 48449(1, 14:40 25th), 49328(1, 05:40 25th),\\ 49516(1, 02:00 25th), 52204(1, 20:20 27th), 52854(1, 15:30 30th), 53518(1, 19:10 29th), 53557(1, 02:40 20th), 55186(1, 08:20 26th),\\ 56011(1, 00:50 21st), 56409(1, 20:50 27th), 56499(1, 21:10 24th), 57343(1, 20:50 29th), 57762(1, 07:10 26th), 59751(1, 00:50 28th),\\ 60850(1, 22:30 24th), 60917(1, 10:20 20th), 60928(1, 05:10 31st), 62627(1, 14:40 29th), 63591(1, 13:50 26th), 63918(1, 01:00 26th),\\ 65032(1, 18:00 29th), 65165(1, 01:20 28th), 65238(1, 14:10 28th) \end{tabular} \\ \hline
 \end{tabular}
-\end{center}
 \end{table*}
 
 
@@ -443,9 +441,9 @@ By analyzing alerts obtained from the {\it GLASSO} engine for one month in Octob
 \begin{enumerate}
   \item cyber attack: a network scan that indiscriminately tried attacks and intrusions through vulnerable TCP ports in order for multiple hosts already infected with malware to search for a next infection target.
   \item Survey scan: a network scan that indiscriminately tried surveys and researches to TCP ports using multiple hosts by organizations such as Shodan, Censys, etc.
-  \item Sporadically focused traffic: a phenomenon in which packets are concentrated from multiple source hosts to one darknet destination IP address and a TCP port suddenly, due to some cause.
+  \item Sporadically focused traffic: a phenomenon in which packets were concentrated from multiple source hosts to one darknet destination IP address and a TCP port suddenly, due to some cause.
 \end{enumerate}
-Please note that multiple source hosts in an alert cooperated with each other anomalously, and the following describes how the alerts were divided into three types as above.
+Please note that multiple source hosts in an alert cooperated or coordinated with each other anomalously, and the following describes how the alerts were divided into three types as above.
 
 
 In a sporadically focused traffic type, packets were concentrated from a number of source hosts to a specific destination IP address, clearly differed from the other two types which scan a wide range of destination IP address.
@@ -492,7 +490,8 @@ It was a cyber attack event that we missed due to human error when making the an
 Finally, please note that unknown attacks will be clarified in the future and false negatives may increase.
 
 \begin{table}[tb]
-  \begin{center}
+  \centering
+  \vspace{-0.1cm}
   \caption{Checking Answers using Limited Answer Table According to Types of Cyber Attack (TCP port)}
   \label{tab:answer}
 \begin{tabular}{c||c|c|c}
@@ -503,12 +502,12 @@ Finally, please note that unknown attacks will be clarified in the future and fa
 \begin{tabular}[c]{@{}c@{}} Other\\Vulnerability\end{tabular} & \begin{tabular}[c]{@{}c@{}}1701,5379,5900,\\ 6379,7379,49152\\(6 TCP ports)\end{tabular}                                     & \begin{tabular}[c]{@{}c@{}}2004\\(1 TCP port)\end{tabular}        & None \\ \hline\hline
 Total  & 31  & 3  & 0   \\ \hline
 \end{tabular}
-\end{center}
 \end{table}
 
 
 \begin{table}[tb]
-  \begin{center}
+  \centering
+  \vspace{-0.1cm}
   \caption{Performance of Malware Activity Detection of the {\it GLASSO} Engine}
   \label{tab:accuracy}
 \begin{tabular}{c|c|c|c}
@@ -516,7 +515,6 @@ Total  & 31  & 3  & 0   \\ \hline
 \begin{tabular}[c]{@{}c@{}}Accuracy\\$\bigl(=\frac{TP}{TP+FP+FN}\bigr)$\end{tabular} & \begin{tabular}[c]{@{}c@{}}Precision\\$\bigl(=\frac{TP}{TP+FP}\bigr)$\end{tabular} & \begin{tabular}[c]{@{}c@{}}Recall\\$\bigl(=\frac{TP}{TP+FN}\bigr)$\end{tabular} & \begin{tabular}[c]{@{}c@{}}F-measure\\ $\bigl(=\frac{2TP}{2TP+FP+FN}\bigr)$ \end{tabular} \vspace{0.1cm}\\  \hline\hline
 91.2\%                                                   & 100\%                                                     & 91.2\%                                                 & 95.4\%                                                   \\ \hline
 \end{tabular}
-\end{center}
 \end{table}
 
 
