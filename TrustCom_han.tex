@@ -97,7 +97,7 @@ This paper offers the following contributions:
 	\item We operated the {\it GLASSO} engine in real-time using live darknet traffic (raw packets) and got detection results without delay.
   Also, we analyzed detection results by destination TCP ports (by services). (discussed in Section V\hspace{-.1em}I\hspace{-.1em}I-B, C)
   \item We evaluated the detection performance of malware activities using the limited ground truth.
-  This is the first and practical evaluation of the detection performance of malware activities on darknet, and we explained the details of detected malware activities.
+  This is the first and practical evaluation of the detection performance of malware activities on the darknet, and we explained the details of detected malware activities.
   Finally, we considered some countermeasures against several malware activities that GLASSO engine missed. (discussed in Section V\hspace{-.1em}I\hspace{-.1em}I-D, E and V\hspace{-.1em}I\hspace{-.1em}I\hspace{-.1em}I)
 \end{enumerate}
 
@@ -108,7 +108,7 @@ In this section, the overview of our fundamental tools, i.e., a darknet, graphic
 
 \subsection{Darknet}
 The Internet can be categorized into two types of networks: livenet and darknet.
-A livenet is a network of a busy IP addresses, while a darknet is a network of unused IP addresses.
+A livenet is a network of busy IP addresses, while a darknet is a network of unused IP addresses.
 We set up receivers (sensors) on our darknets and passively capture all the traffic arriving at these receivers.
 Most of the packets in the traffic are TCP packets with SYN flag on, i.e., TCP-SYN packets.
 TCP-SYN packets reaching a darknet are non-ordinary packets; these are often scans or unintended packets sent by misconfigured network devices.
@@ -128,18 +128,18 @@ In other words, the graph in GGM using this precision matrix shows conditional i
 
 
 \subsection{Graphical Lasso}
-The maximum-likelihood estimation of precision matrix $\Sigma^{-1}$ is the inverse matrix of the sample covariance matrix $S$.
+The maximum-likelihood estimation of a precision matrix $\Sigma^{-1}$ is the inverse matrix of the sample covariance matrix $S$.
 We expect the precision matrix $\Sigma^{-1}$ to be a sparse matrix such that variable pairs with essential dependencies take nonzero values and perhaps weakly related variable pairs with noise take zero.
 In general, however, the elements of the sample covariance matrix $S$ cannot be strictly zero, and the empirical precision matrix $S^{-1}$ is also not generally sparse.
 Therefore, the ``graphical lasso'' which is a sparse structure learning algorithm optimizes a precision matrix by solving a penalized maximum likelihood equation with $\ell_1$ regularization term in one column (one row) and estimates a sparse precision matrix $\hat{\Sigma^{-1}}$ without explicit inverse matrix calculation~\cite{Friedman}.
 The input arguments of the graphical lasso algorithm are the sample covariance matrix $S$ and the $\ell_1$ regularization coefficient $r\;(\geq 0)$.
-Here, $r$ is a hyper parameter to decide how much dependency is regarded as noise-derived, and it is possible to adjust the sparsity of the precision matrix to be estimated.
+Here, $r$ is a hyperparameter to decide how much dependency is regarded as noise-derived, and it is possible to adjust the sparsity of the precision matrix to be estimated.
 From the above, the GGM graph using the precision matrix $\hat{\Sigma^{-1}}$ estimated by the graphical lasso algorithm express more essential dependencies of all variable pairs than the maximum-likelihood estimate of the precision matrix.
 
 
 
 \section{Related Work}
-Many studies using darknet has been carried out, and showed its usefulness on analyzing Internet-wide scanning.
+Many studies using darknet has been carried out and showed its usefulness on analyzing Internet-wide scanning.
 Dainotti {\it et al.} developed and evaluated a methodology for removing spoofed traffic from both darknets and live networks, and contributed to support census-like analyses of IP address space utilization~\cite{Dainotti}.
 Durumeric {\it et al.} analyzed a large-scale darknet to investigate scanning activities, and identified patterns in large horizontal scanning operations~\cite{Durumeric}.
 Also, they presented an analysis of the latest network scanning on the overall landscape, and its influence, and countermeasures of the defender in detail.
@@ -232,7 +232,7 @@ We consider a method to output alerts (outliers) sequentially by processing ever
 First, the newest time slot $t$ is processed in the same manner as Section I\hspace{-.1em}V-B to obtain a graph density value $d_t^{(r)}$.
 Then, $d_t^{(r)}$ is added to a sequence of the past graph density value $\bm{d}^{(r)}$, and if the length of $\bm{d}^{(r)}$ is an arbitrary positive integer $K$, alert judgment (outlier detection) is performed.
 If the length of $\bm{d}^{(r)}$ is less than $K$, wait until the next time slot updated without performing the alert judgment.
-Detailed alert judgment method is explained in a next section.
+Detailed alert judgment method is explained in the next section.
 The time slot judged as an outlier is output as an alert and is deleted from $\bm{d}$ so that it will not be referred to in subsequent alert judgment.
 Also, if no time slot is determined as an outlier, delete the oldest time slot from $\bm{d}$.
 When the time passes and a new time slot is updated, by repeating the above steps, it is possible to sequentially process {\it GLASSO} engine while keeping the number of time slots used for alert judgment.
@@ -323,8 +323,8 @@ These parameters are determined by an empirical heuristic method.
 \subsection{Length of Time Slot $T$}
 The length of time slot $T$ {\it (sec.)} means the length of the entire observation time series of the data used for one model learning.
 First of all, we think from an upper bound of $T$.
-A computational complexity of the {\it GLASSO} engine depends greatly on the number of source hosts $N$.
-As $T$ becomes longer, the number of source hosts generally also increases, a processing time increases exponentially, and a real-time processing becomes difficult.
+The computational complexity of the {\it GLASSO} engine depends greatly on the number of source hosts $N$.
+As $T$ becomes longer, the number of source hosts generally also increases, processing time increases exponentially, and real-time processing becomes difficult.
 Next, we consider a lower bound.
 It is sufficient if we can make rich observations such that all one campaign of network scan is observed in $T$ seconds.
 From our experience, one campaign of many network scans observed at the maximum observation scale of the darknet sensor used in the GLASSO engine ends within 5 minutes (subnet /17).
@@ -339,7 +339,7 @@ Generally, as the sampling interval is severely divided, a time series of the nu
 However, if the sampling interval is too short, there is a risk of estimating that there is no dependence between source hosts that originally work in cooperation.
 On the contrary, if the sampling interval is too long, there is a fear that it may be estimated there is cooperativeness between any source hosts.
 Therefore, it is necessary to set $M$ to an appropriate number, but it is difficult to find the optimum value.
-However fortunately, the regularization coefficient $r$ introduced in the next section has the same function as this $M$.
+However, fortunately, the regularization coefficient $r$ introduced in the next section has the same function as this $M$.
 That is unless $M$ is set to an extreme number, it can be covered with the regularization coefficient $r$.
 Based on our experience, if the sampling interval $T/M$ is about 50 seconds, we can measure a sufficient time series of the number of packets, so we set $M=12$.
 
@@ -349,8 +349,8 @@ Based on our experience, if the sampling interval $T/M$ is about 50 seconds, we 
 
 \subsection{Regularization Coefficient $r$}
 The regularization coefficient $r\;(\geq 0)$ is an input parameter used in the graphical lasso algorithm.
-It is a hyper parameter to decide how much dependence is considered to be derived from noise, and adjusts a sparsity of an estimated precision matrix $\Sigma^{-1}$.
-Here, it is similarly meaningful between scrape down weakly related dependencies and more severely measure a time series of the number of packets.
+It is a hyperparameter to decide how much dependence is considered to be derived from the noise and adjusts a sparsity of an estimated precision matrix $\Sigma^{-1}$.
+Here, it is similarly meaningful between scrape down weakly related dependencies and more severely measures a time series of the number of packets.
 Therefore, $r$ and $M$ have similar roles.
 As a feature of $r$, $d^{(r)}$ generally gets closer to 1 as $r$ gets closer to 0, and $d^{(r)}$ gets closer to 0 as $r$ gets bigger.
 Also, as the value of $r$ is increased, the number of zero elements of a precision matrix estimated by the graphical lasso algorithm increases, so that a calculation time is shortened.
@@ -448,11 +448,11 @@ By analyzing alerts obtained from the {\it GLASSO} engine for one month in Octob
 Please note that multiple source hosts in an alert cooperated with each other anomalously, and the following describes how the alerts were divided into three types as above.
 
 
-In a sporadically focused traffic type, packets were concentrated from a number of source hosts to specific destination IP address, clearly differed from the other two types which scan a wide range of destination IP address.
+In a sporadically focused traffic type, packets were concentrated from a number of source hosts to a specific destination IP address, clearly differed from the other two types which scan a wide range of destination IP address.
 In other words, there was no inclusive relationship clearly between a sporadically focused traffic type and the other two types.
-When both of the following two ratios were greater than 70\% in the alerts, the alert was judged a sporadically focused traffic: (1) The ratio of the number of packets of the destination most received and the total number of packets, (2) The ratio of the number of source hosts of destinations where the source host was most observed and the total number of source hosts.
-As a result of applying this criterion to all alerts, 95 alerts out of a total of 1,634 alerts were found to be a sporadically focused traffic, 81 out of a total of 128 alerts were divided into a sporadically focused traffic.
-In this time, we could not grasp exactly with our darknet what a sporadically focused traffic was intended traffic, only weak guesses that there was a possibility of a routing mistake.
+When both of the following two ratios were greater than 70\% in the alerts, the alert was judged sporadically focused traffic: (1) The ratio of the number of packets of the destination most received and the total number of packets, (2) The ratio of the number of source hosts of destinations where the source host was most observed and the total number of source hosts.
+As a result of applying this criterion to all alerts, 95 alerts out of a total of 1,634 alerts were found to be sporadically focused traffic, 81 out of a total of 128 alerts were divided into sporadically focused traffic.
+In this time, we could not grasp exactly with our darknet what sporadically focused traffic was intended traffic, only weak guesses that there was a possibility of a routing mistake.
 However, since this paper covered the detection of malware activities, and sporadically focused traffic did not seem to be a campaign originating from malware; sporadically focused traffic was not considered.
 
 
@@ -460,9 +460,9 @@ However, since this paper covered the detection of malware activities, and spora
 Next, it could be assumed that 1,539 remaining alerts (47 remaining TCP ports) were network scans since many source hosts sent packets to a specific TCP port of many destination IP address cooperatively.
 There were two kinds of network scans of SYN packet reaching the darknet: cyber attacks and survey scans.
 In the case of an alert by survey scanners, since a size of the source hosts tended to be smaller than an alert by cyber attacks, we focused on a size of the source hosts and considered dividing it into cyber attacks and survey scans.
-In many cases, a survey scanner could be found from HTTP connection and a host name obtained by reverse lookup of a source host IP address.
+In many cases, a survey scanner could be found from HTTP connection and a hostname obtained by reverse lookup of a source host IP address.
 If there was a high proportion of survey scanners among the alert's source hosts, that alert was considered to be an alert by survey scanners.
-As a result of examining alerts in which survey scanners ratio exceeded 50\%, we divided that an alert whose size of source host was smaller than 20 was a survey scan, otherwise it was a cyber attack.
+As a result of examining alerts in which survey scanners ratio exceeded 50\%, we divided that an alert whose size of source host was smaller than 20 was a survey scan, otherwise, it was a cyber attack.
 Here, in the case of cyber attacks, the ratio of a survey scanner was about 20\% at most.
 Finally, we were divided into alerts with 57 survey scans (16 TCP ports) and alerts with 1,482 cyber attacks (31 TCP ports).
 Table~\ref{tab:result_type} shows a result of dividing all alerts obtained during the month of October 2018 into three types for each TCP port.
@@ -607,7 +607,7 @@ Therefore, we conclude that the proposed {\it GLASSO} engine can automatically a
 This work is yet to be improved further.
 First, {\it GLASSO} engine could be optimized further to reduce false negatives.
 Second, pilot operation with the engine should be also conducted to evaluate its practical effectiveness over a long period of time.
-Third, The phenomenon, we call as sporadically focused traffic, remains unclear; further investigation on this phenomenon should be conducted using another dataset generated from honeypot in addition to darknet.
+Third, The phenomenon, we call as sporadically focused traffic, remains unclear; further investigation on this phenomenon should be conducted using another dataset generated from honeypot in addition to the darknet.
 Finally, since it was found that the {\it GLASSO} engine can detect not only cyber attacks but also survey scanners, we would like to detect survey scanners as an extension study.
 Through these work, we hope to streamline security operations and reduce the burden of network security operators and incident response teams.
 
