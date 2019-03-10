@@ -96,8 +96,8 @@ This paper offers the following contributions:
 	\item We tuned important parameters in the {\it GLASSO} engine. (discussed in Section V\hspace{-.1em}I)
 	\item We operated the {\it GLASSO} engine in real-time using live darknet traffic (raw packets) and got detection results without delay.
   Also, we analyzed detection results by destination TCP ports (by services). (discussed in Section V\hspace{-.1em}I\hspace{-.1em}I-B, C)
-  \item We evaluated the detection accuracy of malware activities using the limited ground truth.
-  This is the first and practical evaluation of the detection accuracy of malware activities on darknet, and we explained the details of detected malware activities.
+  \item We evaluated the detection performance of malware activities using the limited ground truth.
+  This is the first and practical evaluation of the detection performance of malware activities on darknet, and we explained the details of detected malware activities.
   Finally, we considered some countermeasures against several malware activities that GLASSO engine missed. (discussed in Section V\hspace{-.1em}I\hspace{-.1em}I-D, E and V\hspace{-.1em}I\hspace{-.1em}I\hspace{-.1em}I)
 \end{enumerate}
 
@@ -147,8 +147,8 @@ Fachkha {\it et al.} devised inference and characterization modules for extracti
 
 
 Ban {\it et al.}~\cite{Ban} proposed an abrupt-change detection algorithm that detected botnet-probe campaigns with a high detection rate by exploring the temporal coincidence in botnet activities visible in darknet traffic.
-However, the dataset used in this abrupt-change detection algorithm processed traffic with only one destination TCP port.
-Since the {\it GLASSO} engine processed the entire live traffic without restriction, the range of the dataset was different from the abrupt-change detection algorithm.
+Although this method used abrupt-change of time series traffic volume addressed to one TCP port, in recent malware activities, there are many cases where abrupt-change cannot be done successfully due to multiple campaigns being overlapped or being scanned constantly.
+Moreover, since the {\it GLASSO} engine processed the entire live traffic without restriction, the range of the dataset was different from the abrupt-change detection algorithm.
 Actually, research using a darknet to detect malware activities of similar scale in the same dataset range as the {\it GLASSO} engine did not exist as far as we know and it was difficult to compare and evaluate.
 
 
@@ -378,40 +378,40 @@ We decided to use 3 days' data for outlier detection ($K=432$), $\theta$ is now 
 
 
 \section{Performance Evaluation}
-In this section, we described a performance evaluation of the {\it GLASSO} engine.
-First, in order to improve the performance of the {\it GLASSO} engine, we considered a method of preliminarily excluding packets which were not interested in at the preprocessing stage without estimating cooperativeness between source hosts.
+In this section, we evaluate the performance of our {\it GLASSO} engine.
+First, to improve the performance of the {\it GLASSO} engine, we exclude packets which are outside our interests at the preprocessing stage without estimating cooperativeness between source hosts.
 Next, we actually operated the {\it GLASSO} engine in real-time and analyzed detected alert results.
-Finally, we evaluated a malware activity detection accuracy and described the details of detected malware activities.
-Here, although there was a possibility that a slight deterioration in accuracy might have occurred compared with batch mode due to the online processing, the method that could not be detected in real-time had no practicality and there was no fundamental difference in the method, so that comparative evaluation was omitted.
+Finally, we evaluated the performance of malware activity detection and described the details of detected malware activities.
+Here, although there is a possibility that a slight deterioration in performance may have occurred compared with batch mode due to the online processing, the method that cannot be detected in real-time has no practicality and there is no fundamental difference in the method, so that comparative evaluation is omitted.
 
 
-\subsection{Enhance Preprocessing}
-We pre-excluded a destination TCP port that constantly observed packets from a large number of packets or source hosts for a long time.
-Such destination TCP ports could easily be noticed by anyone, and generally, those were kept observing for a while without a detection method.
-For the same reason, packets addressed to TCP ports intensively observed as alerts were excluded in advance.
-Furthermore, when such packets were included in model learning of the {\it GLASSO} engine, these occupied a majority of cooperativeness among the source hosts to be estimated, and there was a fear that smaller but essential cooperativeness might be overlooked.
-Such packets that had an adverse effect on model learning and were not interested should be regarded as noise and excluded.
-In addition, the number of source hosts was reduced to some extent, which led to shortening of processing time.
-We regularly updated such work automatically.
+\subsection{Data Preprocessing}
+We pre-exclude destination TCP ports that constantly receive a large number of packets and source hosts for a long time (e.g. more than one week).
+Also, packets addressed to TCP ports intensively observed as alerts are excluded.
+If such packets are included in model learning of the {\it GLASSO} engine, these will massively increase the indicator of cooperativeness among the source hosts to be estimated, and there is a fear that smaller but essential cooperativeness may be overlooked.
+Such packets that have an adverse effect on model learning and that are not interested should be regarded as noise and excluded.
+In addition, the number of source hosts is reduced to some extent, which leads to shortening of processing time.
+This preprocessing should take place regularly.
 
 
 
 \subsection{Real-time Operation of {\it GLASSO} Engine}
 In this section, the results of the {\it GLASSO} engine which operated for 1 month in October 2018 were shown.
 Input parameters of the {\it GLASSO} engine used for the operation were set to $T=600$ {\it (sec.)}, $M=12, K=432, \theta=0.98, r \in R ( = \{0.4, 0.5, 0.6, 0.7, 0.8, 0.9\})$.
-We considered only SYN packets, TCP and TCP ports 22, 23, 80, 81, 445, 2323, 3389, 5555, 8080, 50382, 50390, 52869 were excluded in advance as preprocessing.
-These TCP ports were constantly observed a large number of packets or source hosts before October 1, 2018.
+We considered only TCP-SYN packets and TCP ports 22, 23, 80, 81, 445, 2323, 3389, 5555, 8080, 50382, 50390, 52869 were excluded in the preprocessing phase.
+These TCP ports constantly received a large number of packets from various source hosts before September to October 1, 2018.
 Also, a source host IP address usually had one IP address up to the fourth octet, but in order to reduce the number of $N$, in this experiment, the IP addresses up to the second octet were taken as one source host IP address.
 We used 8 different darknet sensors and operated the {\it GLASSO} engine in real-time for each sensor.
 This darknet sensor observed with different IP address blocks, the IP address observation size and source country were also different.
 As a result of the operation, a total of 1,634 alerts were obtained in real-time without delay.
-Table~\ref{tab:sensor} shows the observation IP address size and the number of alerts for each of the eight sensors.
+Table~\ref{tab:sensor} shows the number of observed IP address and that alerts for each of the eight darknet sensors.
 
 \begin{table}[tb]
   \begin{center}
-    \caption{IP Address Size and the Number of Alerts of Each Darknet Sensor}
+    \caption{The Number of Observed IP Address and Alerts for Each Darknet Sensor}
   \begin{tabular}{c|c|c||c|c|c} \hline
-  Sensor & Size & \# of Alerts & Sensor & Size & \# of Alerts \\ \hline\hline
+  Sensor & \begin{tabular}[c]{@{}c@{}}Observed\\IP Address\end{tabular} &  Alerts & Sensor & \begin{tabular}[c]{@{}c@{}}Observed\\IP Address\end{tabular} & Alerts \\ \hline\hline
+
   A & 29,182 & 122 & E & 8,188 & 198 \\ \hline
   B & 14,593 & 199 & F & 16,384 & 115 \\ \hline
   C & 4,098 & 146 & G & 2,044 & 118 \\ \hline
@@ -431,7 +431,7 @@ Table~\ref{tab:sensor} shows the observation IP address size and the number of a
 Alert Type    & TCP ports (The Number of Alerts, First Detected Date) \\ \hline\hline
 \begin{tabular}[c]{@{}c@{}}cyber attack\\(1,482 \\Alerts)\\(31 Ports)\end{tabular}         & \begin{tabular}[c]{@{}l@{}}21(13, 13:40 20th), 82(56, 10:10 7th), 83(9, 20:00 11th), 84(8, 00:30 12th), 85(25, 11:40 6th), 88(100, 18:20 1st), 110(3, 14:50 17th), \\443(143, 19:30 12th), 1701(1, 04:30 9th), 2480(4, 20:10 14th), 5358(309, 21:30 24th), 5379(27, 13:50 31st), 5431(26, 10:20 3rd),\\ 5900(2, 21:40 31st), 5984(3, 03:20 20th), 6379(4, 18:20 26th), 7379(25, 13:30 31st), 7547(27, 09:50 20th), 8000(78, 21:40 5th),\\ 8001(47, 22:40 5th), 8081(267, 21:00 10th), 8088(7, 06:10 2nd), 8181(69, 01:30 1st), 8291(17, 14:40 5th), 8443(47, 02:40 20th),\\ 8888(31, 20:30 5th), 9000(11, 01:30 2nd), 23023(5, 07:20 14th), 37215(100, 01:30 1st), 49152(11, 01:10 14th), 65000(7, 03:00 14th)\end{tabular}   \\ \hline
 \begin{tabular}[c]{@{}c@{}}Survey Scan\\(57 Alerts)\\(16 Ports)\end{tabular} & \begin{tabular}[c]{@{}l@{}}17(1, 21:00 31st), 53(12, 01:10 20th), 102(6, 18:12 12th), 111(6, 00:00 27th), 990(1, 21:00 28th), 1900(4, 16:00 28th),\\ 3128(1, 18:20 26th), 3780(2, 21:00 25th), 4567(1, 05:40 28th), 5000(2, 01:30 31st), 5357(1, 17:30 31st), 5560(1, 10:30 30th),\\ 7657(1, 16:00 25th), 9200(2, 22:40 28th), 9981(1, 02:30 26th), 11211(15, 00:50 25th)\end{tabular}    \\ \hline
-\begin{tabular}[c]{@{}c@{}}One-dst\\Centralized\\(95 Alerts)\\(81 Ports)\end{tabular}      & \begin{tabular}[l]{@{}l@{}}99(1, 21:00 25th), 139(3, 14:00 28th), 321(1, 17:20 26th), 792(1, 20:40 25th), 1678(1, 20:10 28th), 1859(1, 19:20 25th),\\ 3227(1, 23:00 24th), 3407(1, 19:30 27th), 4466(5, 19:40 31st), 5601(1, 17:00 27th), 5777(1, 20:00 28th), 6821(1, 04:40 27th),\\ 7199(1, 00:10 27th), 8096(1, 22:30 31st), 8185(1, 19:20 28th), 8983(1, 04:10 31st), 10994(1, 14:10 30th), 11647(1, 01:11 31st),\\ 11876(1, 10:00 25th), 12385(1, 18:40 28th), 13750(1, 20:20 31st), 13804(1, 06:20 26th), 14401(1, 17:20 31st), 16964(1, 13:20 25th),\\ 17396(1, 15:00 28th), 17502(1, 06:50 20th), 19533(1, 05:10 26th), 20340(1, 23:30 26th), 20382(1, 19:30 31st), 20405(1, 21:40 28th),\\ 21221(1, 03:30 27th), 21490(1, 21:00 27th), 22063(1, 01:10 26th), 24357(1, 14:40 26th), 25024(1, 17:50 25th), 25476(1, 05:20 28th),\\ 26137(1, 01:30 29th), 26644(1, 22:40 27th), 26934(1, 23:40 24th), 27200(1, 14:50 14th), 27910(1, 14:20 20th), 29217(1, 17:10 25th),\\ 31632(1, 19:20 29th), 34149(1, 01:00 30th), 35669(1, 17:10 30th), 35927(1, 23:10 25th), 36064(1, 16:20 26th), 36678(1, 06:10 25th),\\ 37822(1, 20:40 25th), 38718(1, 05:30 29th), 39420(1, 00:40 28th), 40500(4, 14:40 27th), 41939(1, 19:30 26th), 43160(6, 12:00 28th),\\ 43361(1, 21:40 29th), 43566(1, 08:30 30th), 46928(1, 17:30 30th), 47149(1, 18:40 20th), 48449(1, 14:40 25th), 49328(1, 05:40 25th),\\ 49516(1, 02:00 25th), 52204(1, 20:20 27th), 52854(1, 15:30 30th), 53518(1, 19:10 29th), 53557(1, 02:40 20th), 55186(1, 08:20 26th),\\ 56011(1, 00:50 21st), 56409(1, 20:50 27th), 56499(1, 21:10 24th), 57343(1, 20:50 29th), 57762(1, 07:10 26th), 59751(1, 00:50 28th),\\ 60850(1, 22:30 24th), 60917(1, 10:20 20th), 60928(1, 05:10 31st), 62627(1, 14:40 29th), 63591(1, 13:50 26th), 63918(1, 01:00 26th),\\ 65032(1, 18:00 29th), 65165(1, 01:20 28th), 65238(1, 14:10 28th) \end{tabular} \\ \hline
+\begin{tabular}[c]{@{}c@{}}Sporadically\\Focused\\Traffic\\(95 Alerts)\\(81 Ports)\end{tabular}      & \begin{tabular}[l]{@{}l@{}}99(1, 21:00 25th), 139(3, 14:00 28th), 321(1, 17:20 26th), 792(1, 20:40 25th), 1678(1, 20:10 28th), 1859(1, 19:20 25th),\\ 3227(1, 23:00 24th), 3407(1, 19:30 27th), 4466(5, 19:40 31st), 5601(1, 17:00 27th), 5777(1, 20:00 28th), 6821(1, 04:40 27th),\\ 7199(1, 00:10 27th), 8096(1, 22:30 31st), 8185(1, 19:20 28th), 8983(1, 04:10 31st), 10994(1, 14:10 30th), 11647(1, 01:11 31st),\\ 11876(1, 10:00 25th), 12385(1, 18:40 28th), 13750(1, 20:20 31st), 13804(1, 06:20 26th), 14401(1, 17:20 31st), 16964(1, 13:20 25th),\\ 17396(1, 15:00 28th), 17502(1, 06:50 20th), 19533(1, 05:10 26th), 20340(1, 23:30 26th), 20382(1, 19:30 31st), 20405(1, 21:40 28th),\\ 21221(1, 03:30 27th), 21490(1, 21:00 27th), 22063(1, 01:10 26th), 24357(1, 14:40 26th), 25024(1, 17:50 25th), 25476(1, 05:20 28th),\\ 26137(1, 01:30 29th), 26644(1, 22:40 27th), 26934(1, 23:40 24th), 27200(1, 14:50 14th), 27910(1, 14:20 20th), 29217(1, 17:10 25th),\\ 31632(1, 19:20 29th), 34149(1, 01:00 30th), 35669(1, 17:10 30th), 35927(1, 23:10 25th), 36064(1, 16:20 26th), 36678(1, 06:10 25th),\\ 37822(1, 20:40 25th), 38718(1, 05:30 29th), 39420(1, 00:40 28th), 40500(4, 14:40 27th), 41939(1, 19:30 26th), 43160(6, 12:00 28th),\\ 43361(1, 21:40 29th), 43566(1, 08:30 30th), 46928(1, 17:30 30th), 47149(1, 18:40 20th), 48449(1, 14:40 25th), 49328(1, 05:40 25th),\\ 49516(1, 02:00 25th), 52204(1, 20:20 27th), 52854(1, 15:30 30th), 53518(1, 19:10 29th), 53557(1, 02:40 20th), 55186(1, 08:20 26th),\\ 56011(1, 00:50 21st), 56409(1, 20:50 27th), 56499(1, 21:10 24th), 57343(1, 20:50 29th), 57762(1, 07:10 26th), 59751(1, 00:50 28th),\\ 60850(1, 22:30 24th), 60917(1, 10:20 20th), 60928(1, 05:10 31st), 62627(1, 14:40 29th), 63591(1, 13:50 26th), 63918(1, 01:00 26th),\\ 65032(1, 18:00 29th), 65165(1, 01:20 28th), 65238(1, 14:10 28th) \end{tabular} \\ \hline
 \end{tabular}
 \end{center}
 \end{table*}
@@ -443,17 +443,17 @@ By analyzing alerts obtained from the {\it GLASSO} engine for one month in Octob
 \begin{enumerate}
   \item cyber attack: a network scan that indiscriminately tried attacks and intrusions through vulnerable TCP ports in order for multiple hosts already infected with malware to search for a next infection target.
   \item Survey scan: a network scan that indiscriminately tried surveys and researches to TCP ports using multiple hosts by organizations such as Shodan, Censys, etc.
-  \item {\it One-dst-centralized}: a phenomenon in which packets are concentrated from multiple source hosts to one darknet destination IP address and a TCP port suddenly, due to some cause.
+  \item Sporadically focused traffic: a phenomenon in which packets are concentrated from multiple source hosts to one darknet destination IP address and a TCP port suddenly, due to some cause.
 \end{enumerate}
 Please note that multiple source hosts in an alert cooperated with each other anomalously, and the following describes how the alerts were divided into three types as above.
 
 
-In an {\it one-dst-centralized} type, packets were concentrated from a number of source hosts to specific destination IP address, clearly differed from the other two types which scan a wide range of destination IP address.
-In other words, there was no inclusive relationship clearly between an {\it one-dst-centralized} type and the other two types.
-When both of the following two ratios were greater than 70\% in the alerts, the alert was judged an {\it one-dst-centralized}: (1) The ratio of the number of packets of the destination most received and the total number of packets, (2) The ratio of the number of source hosts of destinations where the source host was most observed and the total number of source hosts.
-As a result of applying this criterion to all alerts, 95 alerts out of a total of 1,634 alerts were found to be an {\it one-dst-centralized}, 81 out of a total of 128 alerts were divided into an {\it one-dst-centralized}.
-In this time, we could not grasp exactly with our darknet what an {\it one-dst-centralized} was intended traffic, only weak guesses that there was a possibility of a routing mistake.
-However, since this paper covered the detection of malware activities, and {\it one-dst-centralized} did not seem to be a campaign originating from malware; {\it one-dst-centralized} was not considered.
+In a sporadically focused traffic type, packets were concentrated from a number of source hosts to specific destination IP address, clearly differed from the other two types which scan a wide range of destination IP address.
+In other words, there was no inclusive relationship clearly between a sporadically focused traffic type and the other two types.
+When both of the following two ratios were greater than 70\% in the alerts, the alert was judged a sporadically focused traffic: (1) The ratio of the number of packets of the destination most received and the total number of packets, (2) The ratio of the number of source hosts of destinations where the source host was most observed and the total number of source hosts.
+As a result of applying this criterion to all alerts, 95 alerts out of a total of 1,634 alerts were found to be a sporadically focused traffic, 81 out of a total of 128 alerts were divided into a sporadically focused traffic.
+In this time, we could not grasp exactly with our darknet what a sporadically focused traffic was intended traffic, only weak guesses that there was a possibility of a routing mistake.
+However, since this paper covered the detection of malware activities, and sporadically focused traffic did not seem to be a campaign originating from malware; sporadically focused traffic was not considered.
 
 
 
@@ -473,9 +473,9 @@ Table~\ref{tab:result_type} shows a result of dividing all alerts obtained durin
 
 
 
-\subsection{Evaluation of Malware Activity Detection Accuracy}
+\subsection{Performance Evaluation of Malware Activity Detection}
 From the previous section, it was possible to divide 31 attacked TCP ports out of all {\it GLASSO} engine alerts in October 2018.
-In this section, we measured a detection accuracy of how many of the 31 TCP ports were correct.
+In this section, we measured a detection performance of how many of the 31 TCP ports were correct.
 In order to confirm the correct/incorrect answer, we manually made an answer table of attacked TCP ports in our darknet in October 2018, as far as we knew at the beginning of December 2018.
 We comprehensively looked at various information such as information contained in the SYN packet (time stamp, source IP address, source port, destination port, sequence number, window size), vulnerability report, threat intelligence service, security report, and judged the correct answer.
 
@@ -485,7 +485,8 @@ The results of the answers were shown in Table~\ref{tab:answer}.
 Table~\ref{tab:answer} shows TCP port information of true positive, false negative, false positive according to three types of cyber attack.
 Since this limited answer table recorded only the attacked TCP port, that is, correct answer, there was no true negative in such evaluation.
 As a result, we got 31 true positives, 3 false negatives and 0 false positives of TCP ports.
-As shown in Table~\ref{tab:accuracy}, the accuracy of malware activity detection in October 2018 of the {\it GLASSO} engine was 91.2\% accuracy, 100\% precision, 91.2\% recall, and 95.4\% F-measure.
+As shown in Table~\ref{tab:accuracy}, the performance of malware activity detection in October 2018 of the {\it GLASSO} engine was 91.2\% accuracy, 100\% precision, 91.2\% recall, and 95.4\% F-measure.
+Here, the four indicators used for performance evaluation, in which true negatives is not considered in comparison with the general indication.
 Also, there was one attacked TCP port detected only by the {\it GLASSO} engine in true positives (TCP port number 1701).
 It was a cyber attack event that we missed due to human error when making the answer table.
 Finally, please note that unknown attacks will be clarified in the future and false negatives may increase.
@@ -508,7 +509,7 @@ Total  & 31  & 3  & 0   \\ \hline
 
 \begin{table}[tb]
   \begin{center}
-  \caption{Accuracy of Malware Activity Detection of the {\it GLASSO} Engine}
+  \caption{Performance of Malware Activity Detection of the {\it GLASSO} Engine}
   \label{tab:accuracy}
 \begin{tabular}{c|c|c|c}
 \hline
@@ -597,7 +598,7 @@ As a countermeasure for such false negatives, considering a method that can incr
 \section{Conclusion}
 The proposed {\it GLASSO} engine, unlike our earlier work~\cite{Han}, makes it possible to detect new malware activities in real-time and thus enables us to respond situations more quickly.
 Various evaluations have been conducted to demonstrate the effectiveness of the engine.
-We clarified that the engine produced alerts for three types of activities, i.e., cyber attack, survey scan, and {\it one-dst centralized}, and they can be properly distinguished by preparing proper criteria.
+We clarified that the engine produced alerts for three types of activities, i.e., cyber attack, survey scan, and sporadically focused traffic, and they can be properly distinguished by preparing proper criteria.
 We made limited ground truth by manual analysis, with which we evaluated the malware activity detection performance of the engine and analyzed the details of the detected activities.
 Moreover, the engine detected anomalous events that could not have been detected by the conventional method.
 Although the engine suffers from some false negatives, we believe it could be alleviated by properly preparing the environment.
@@ -606,7 +607,7 @@ Therefore, we conclude that the proposed {\it GLASSO} engine can automatically a
 This work is yet to be improved further.
 First, {\it GLASSO} engine could be optimized further to reduce false negatives.
 Second, pilot operation with the engine should be also conducted to evaluate its practical effectiveness over a long period of time.
-Third, The phenomenon, we call as {\it one-dst centralized}, remains unclear; further investigation on this phenomenon should be conducted using another dataset generated from honeypot in addition to darknet.
+Third, The phenomenon, we call as sporadically focused traffic, remains unclear; further investigation on this phenomenon should be conducted using another dataset generated from honeypot in addition to darknet.
 Finally, since it was found that the {\it GLASSO} engine can detect not only cyber attacks but also survey scanners, we would like to detect survey scanners as an extension study.
 Through these work, we hope to streamline security operations and reduce the burden of network security operators and incident response teams.
 
