@@ -39,14 +39,14 @@
 \maketitle
 
 \begin{abstract}
-Recently, as cyber attacks from malware are evolving more and more, serious security incidents occur frequently and making cyberspace less secure.
-Accordingly, studies on malware activity detection methods that can cope with subspecies and unknown attacks promptly and precisely are important.
-Our earlier method monitors network traffic arriving at a darknet, estimates cooperativeness of the source host pairs, and detects outliers through anomalous cooperative traffic.
-One of the causes of anomalous source host-to-host cooperativeness on darknet traffic is an Internet-wide scanning from malware.
-However, although the method is effective for malware activity detection, it can not analyze in real-time.
-In this study, we propose an online processing algorithm, making it possible to detect malware activities in real-time.
-We also tune several important parameters, implement and operate the proposed method, and evaluate the performance of our method.
-As a result of evaluating malware activity detection accuracy through a limited ground truth, we obtained results of 91.2\% accuracy, 100\% precision, 91.2\% recall, and 95.4\% F-measure.
+Recent malware evolutions have rendered cyber space less secure, and we have witnessed increasing amount of severe security incidents in these days.
+To minimize the impact of malware activities, it is important to promptly and precisely detect them.
+We have been working on this issue by monitoring traffic coming into unused IP address spaces, i.e., a darknet.
+On our darknet, Internet-wide malware scans are observed as if they are coordinated or cooperatively working.
+Based on this observation, our earlier method monitored network traffic arriving at our darknet, estimated cooperativeness between each pair of the source hosts, and detected drastic changes of the cooperativeness among source hosts as the signal of newly activated malware activities.
+However, the method cannot work in real-time and thus is impractical.
+In this study, we extend our earlier work and propose an online processing algorithm, making it possible to detect malware activities in real-time.
+In our evaluation, we measure the detection performance of the proposed method with our proof-of-concept implementation to demonstrate its feasibility and effectiveness in terms of detecting the rise of new malware activities in real-time.
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -55,45 +55,39 @@ Real-time malware activity detection, Darknet traffic analysis, Outlier detectio
 
 
 \section{Introduction}
-Malware have continued to grow and become diverse recently, and the number of variants and unknown attacks is increasing.
-In this paper, a malware activity such as network scanning is regarded as a cyber attack.
-In any cyber attack, it is important to quickly and precisely grasp actual behaviors of cyber attacks on the Internet as a countermeasure.
-As a conventional method for dealing with actual cyber attacks quickly and precisely by network-based access control and analysis, there are signature based and whitelist/blacklist based access control methods like a intrusion detection system and a firewall.
-In general, however, these conventional methods cannot be expected to cope with subspecies and unknown attacks.
-Also, there is a heuristic rule-based analysis and response method by experts such as network security operators, but human error can occur.
-For the above reasons, studies on malware activity detection methods that can quickly and precisely deal with subspecies and unknown attacks and without human error are important in recent years.
+
+The number of cyber attacks has been growing, and they often use malware as their tool.
+%and their types have been diversified in recent years
+To minimize the impact of cyber attacks, it is important to quickly and precisely grasp actual behaviors of malware on the Internet.
+Many of intrusion detection systems and firewalls have already implemented signature based and/or whitelist/blacklist based access control functions, but these cannot cope with unknown malware variants and brand-new malware.
+Network security operators or analysts may conduct a heuristic and rule-based analysis, but it is costly and human error may occur.
+Therefore, a method that can automatically, quickly, and precisely detect activities of malware of all types are needed in present days.
+
+We focus on the detection of indiscriminate attacks, which do not have any specific targets and attack arbitrary hosts on the Internet.
+Malware's network scanning activity is a type of such attacks, and malware often performs this to locate attack targets.
+Since the scans are sent to arbitrary IP addresses, some of them may arrive at unused IP address spaces, i.e., darknet.
+To capture these scans, we set up receivers (sensors) in our darknet and captured all the traffic arriving at the sensors.
+Through the analysis of the traffic, we intend grasp what kind of network service was being targeted and the trend of global cyber attack,
+
+The difficulty lies in how we should distinguish the ill-intentioned packets from others; the darknet traffic includes not only ill-intentioned scans but also legitimate scans with research purposes and unintentionally sent packets due to device misconfiguration.
+In this study, we work on a mechanism that automatically detects indiscriminate attacks reaching darknets like network scans from malware.
+The mechanism detected cyber attacks quickly and precisely including variants and unknown attacks by using an unsupervised machine learning method, so that there is no human error.
+
+On our darknet, Internet-wide malware scans are observed as if they are coordinated or cooperatively working.
+In reality, we believe each infected host send scans independently, though there are still minor cases where command-and-control (C2) servers coordinate bots.
+%~\cite{Akiyama}
+Based on this observation, our earlier method~\cite{Han}, called ``{\it GLASSO} engine\footnote{The engine is named after the library of R language ``glasso''~\cite{Friedman_glasso}.},'' estimates the cooperativeness of the source hosts by using a sparse structure learning algorithm, called ``Graphical Lasso''~\cite{Friedman}.
+It also provides alerts when the estimated cooperativeness drastically changes; it can detect a campaign or a group of related activities by estimating the cooperativeness among many pairs of source hosts for each unit time and by finding outlier of cooperativeness among different unit times.
+This approach is robust to noise:  packets that accidentally arrive at our darknet space due to misconfigurations will not show cooperativeness.
+Moreover, this approach ignores activities with weak cooperativeness.
+
+However, since the {\it GLASSO} engine in~\cite{Han} works in a batch mode and requires 3-day darknet traffic to process, the analysis result will not be provided in real time and will be delayed by more than 3 days.
+Therefore, in this paper, we propose an online processing algorithm of {\it GLASSO} engine that extends our earlier method~\cite{Han}, making it possible to detect the outliers sequentially and in real-time.
+In our evaluation, we measure the detection performance of the proposed method with our proof-of-concept implementation to demonstrate its feasibility and effectiveness in terms of detecting the rise of new malware activities in real-time.
+For this evaluation, we manually prepared the list of malicious events and the port numbers they used; these events and port numbers should be identified by the proposed algorithm.
+With the list, we evaluate the detection performance of {\it GLASSO} engine and demonstrate its feasibility and usefulness.
 
 
-
-We focus on the detection of indiscriminate attacks like Internet-wide scan such as attacking and intruding to an unspecified number of Internet users.
-Here, we set up receivers (sensors) in our darknet---unused IP address blocks---and captured all the traffic arriving at the sensors to generate a dataset.
-A lot of attacks from malware like indiscriminately scattered network scans reach the darknet.
-Therefore, by analyzing the darknet, it is easy to grasp what kind of network service was being targeted and the trend of global cyber attacks.
-However, since the darknet sensor we operate does not respond to the reached packets, it is difficult for a human to manually distinguish whether those packets are intended for an attack.
-Accordingly, in this study, we propose a mechanism to detect indiscriminate attacks reaching darknets like network scans from malware.
-The mechanism detected cyber attacks quickly and precisely, including unknown attacks by using an unsupervised machine learning method, so that there is no human error.
-
-
-
-
-Since infected hosts (devices) forming a botnet behave synchronously when they received commands from a command-and-control server~\cite{Akiyama}, our earlier method~\cite{Han} focused on cooperativeness between the source hosts.
-Since this method used the library of R language ``glasso''~\cite{Friedman_glasso}, which is an implementation of an algorithm called ``Graphical Lasso'', this method is called ``{\it GLASSO} engine'' hereafter for convenience.
-The {\it GLASSO} engine can be seen that a strongly cooperated network campaign is performed from many source hosts in a certain time period judged as an outlier.
-One of the causes of anomalous source host-to-host cooperativeness on darknet traffic is a cyber attack using Internet-wide scanning from malware, and the {\it GLASSO} engine can detect such cyber attacks.
-This cooperativeness can be estimated by the sparse structure learning algorithm ``Graphical Lasso''~\cite{Friedman}.
-In addition, the graphical lasso can be expected to scrape off weak cooperativeness of host pair that depend on coincidence.
-Therefore, by usage of this engine we can be released by worrying the communication due to misconfigurations arriving at the darknet and the weak cooperativeness of the host pair, and can concentrate on more essential cooperativeness.
-
-
-However, since the {\it GLASSO} engine in the earlier work~\cite{Han} was in a batch mode requiring 3 days' darknet traffic data to process; when considering the processing time, the result was delayed 3 days at most until output.
-In other words, it could not be said that the batch-mode {\it GLASSO} engine could analyze darknet traffic promptly.
-Therefore, in this paper, we propose an online processing algorithm of {\it GLASSO} engine, which makes outlier detection sequentially and in real-time.
-Then, we actually operated the {\it GLASSO} engine in real-time using live darknet traffic (raw packets).
-Then, since it is important to evaluate an accuracy with any detection method, we also want to evaluate the accuracy of detection results of {\it GLASSO} engine.
-In general, however, it is difficult to distinguish whether a packet arriving at the darknet is intended for a cyber attack.
-Therefore, we employ one effective method for evaluation.
-We made an answer table in the range we knew and evaluated detection results using this limited ground truth and derived the detection accuracy of malware activities of {\it GLASSO} engine.
-To sum up, the proposed {\it GLASSO} engine was possible to quickly and precisely grasp indiscriminate cyber attacks like network scans in real-time, automatically, and we thought it would lead to ease a burden of network security operation and security incident response.
 
 \noindent
 \textbf{Contribution.}\space\space
@@ -105,7 +99,7 @@ This paper offers the following contributions:
 	\item We operated the {\it GLASSO} engine in real-time using live darknet traffic (raw packets) and got detection results without delay.
   Also, we analyzed detection results by destination TCP ports (by services). (discussed in Section V\hspace{-.1em}I\hspace{-.1em}I-B, C)
   \item We evaluated the detection accuracy of malware activities using the limited ground truth.
-  This was the first and practical evaluation of the detection accuracy of malware activities on darknet, and we explained the details of detected malware activities.
+  This is the first and practical evaluation of the detection accuracy of malware activities on darknet, and we explained the details of detected malware activities.
   Finally, we considered some countermeasures against several malware activities that GLASSO engine missed. (discussed in Section V\hspace{-.1em}I\hspace{-.1em}I-D, E and V\hspace{-.1em}I\hspace{-.1em}I\hspace{-.1em}I)
 \end{enumerate}
 
@@ -128,26 +122,26 @@ In this paper, a network scan that indiscriminately tried attacks and intrusions
 \subsection{Graphical Gaussian Model}
 A graphical Gaussian model (hereinafter, GGM) is a probabilistic model for which a graph expresses the dependence structure between random variables given a multivariate Gaussian distribution.
 To measure the dependency structure between random variables, one may obtain correlation coefficients, but it may include spurious correlation between random variables is included.
-To cope with the issue, there is a method of obtaining a precision matrix $\Sigma^{-1}$ (the inverse of the covariance matrix $\Sigma$) from which conditional independence of a pair of random variables can be measured~\cite{Ide}.
-If and only if when $(\Sigma^{-1})_{ij}=0$, then $x_ {i}$ and $x_ {j}$ are independent conditioned on all the other variables.
-The definition of the graph in the GGM using the precision matrix $\Sigma^{-1}\in\mathbb{R}^{N \times N}$ of a sequence of random variables following an $N$-dimensional multivariate Gaussian distribution is as follows: $N$ random variables correspond to the nodes, and if a matrix element of $(\Sigma^{-1})_{ij}$ is zero, there is no edge between variables $x_i$ and $x_j$, if a matrix element is non-zero, there is edge between variables $x_i$ and $x_j$.
-In other words, the graph in GGM using this precision matrix shows conditional independence of all pairs of random variables.
+To cope with the issue, there is a method of obtaining a precision matrix $\Sigma^{-1}$ from which conditional independence of a pair of random variables can be measured~\cite{Ide}.
+If and only if when $\Sigma^{-1}_{ij}=0$, then $x_ {i}$ and $x_ {j}$ are independent conditioned on all the other variables.
+The definition of the graph in the GGM using the precision matrix $\Sigma^{-1}\in\mathbb{R}^{N \times N}$ of a sequence of random variables following an $N$-dimensional multivariate Gaussian distribution is as follows: $N$ random variables correspond to the nodes, and if a matrix element of $\Sigma^{-1}$ is zero, there is no edge between the nodes, if a matrix element is non-zero, there is edge between the nodes.
+In other words, the graph in GGM using this precision matrix show conditional independence of all pairs of random variables.
 
 
 
 \subsection{Graphical Lasso}
-The maximum-likelihood estimation of precision matrix $\Sigma^{-1}$ is the inverse matrix of the sample covariance matrix $S$.
+The precision matrix $\Sigma^{-1}$ is the inverse matrix of the sample covariance matrix $S$.
 We expect the precision matrix $\Sigma^{-1}$ to be a sparse matrix such that variable pairs with essential dependencies take nonzero values and perhaps weakly related variable pairs with noise take zero.
-In general, however, the elements of the sample covariance matrix $S$ cannot be strictly zero, and the empirical precision matrix $S^{-1}$ is also not generally sparse.
-Therefore, the ``graphical lasso'' which is a sparse structure learning algorithm optimizes a precision matrix by solving a penalized maximum likelihood equation with $\ell_1$ regularization term in one column (one row) and estimates a sparse precision matrix $\hat{\Sigma^{-1}}$ without explicit inverse matrix calculation~\cite{Friedman}.
-The input arguments of the graphical lasso algorithm are the sample covariance matrix $S$ and the $\ell_1$ regularization coefficient $r\;(\geq 0)$.
-Here, $r$ is a hyper parameter to decide how much dependency is regarded as noise-derived, and it is possible to adjust the sparsity of the precision matrix to be estimated.
-From the above, the GGM graph using the precision matrix $\hat{\Sigma^{-1}}$ estimated by the graphical lasso algorithm express more essential dependencies of all variable pairs than the maximum-likelihood estimate of the precision matrix.
+In general, however, the elements of the sample covariance matrix $S$ cannot be strictly zero, and the precision matrix $\Sigma^{-1}$ is also not generally sparse.
+Therefore, the ``graphical lasso'' which is a sparse structure learning algorithm optimizes a precision matrix by solving a maximum likelihood equation with $\ell_1$ regularization term in one column (one row) and estimates a sparse precision matrix $\hat{\Sigma^{-1}}$ without explicit inverse matrix calculation~\cite{Friedman}.
+The input arguments of the graphical lasso algorithm are the sample covariance matrix $S$ and the $\ell_1$ regularization coefficient $r\in\mathbb{R}\;(\geq 0)$.
+Here, $r$ is a threshold to decide how much dependency is regarded as noise-derived, and it is possible to adjust the sparsity of the precision matrix to be estimated.
+From the above, the GGM graph using the precision matrix $\hat{\Sigma^{-1}}$ estimated by the graphical lasso algorithm express conditionally independent and more essential dependencies of all variable pairs.
 
 
 
 \section{Related Work}
-Many studies using darknet has been carried out, and showed its usefulness on analyzing Internet-wide scanning.
+Many studies using darknet had been carried out, and showed its usefulness on analyzing Internet-wide scanning.
 Dainotti {\it et al.} developed and evaluated a methodology for removing spoofed traffic from both darknets and live networks, and contributed to support census-like analyses of IP address space utilization~\cite{Dainotti}.
 Durumeric {\it et al.} analyzed a large-scale darknet to investigate scanning activities, and identified patterns in large horizontal scanning operations~\cite{Durumeric}.
 Also, they presented an analysis of the latest network scanning on the overall landscape, and its influence, and countermeasures of the defender in detail.
@@ -163,46 +157,46 @@ Actually, research using a darknet to detect malware activities of similar scale
 
 
 \section{{\it GLASSO} Engine (Batch-mode)}
-In this section, we introduce our preliminary algorithm, presented in ~\cite{Han}, that uses GGM to analyze darknet traffic and discusses briefly.
+In this section, we introduce our preliminary algorithm, presented in ~\cite{Han}, that uses GGM to analyze darknet traffic and discusses its shortcomings.
 
 
 \subsection{Applying GGM to Darknet Traffic}
-The {\it GLASSO} engine takes a time series of the number of packets received from each source host as a variable and applied GGM to capture the dependency between variables (source hosts).
-Although this variable is never expressed as a Gaussian distribution, it can be assumed that there were many variables close to the form of a log-normal distribution, so it approximate to some extent a Gaussian distribution by log-transformation.
-Also, if the variables cannot be completely complied with a Gaussian distribution but can be approximated to some extent, dependency relationships between the variables in the GGM could be grasped.
+The {\it GLASSO} engine took a time pattern of the number of packets received from each source host as a variable and applied GGM to capture the dependency between variables (source hosts).
+Although this variable was never expressed as a Gaussian distribution, it could be assumed that there were many variables close to the form of a log-normal distribution, so it approximated to some extent a Gaussian distribution by log-transformation.
+Also, if the variables could not be completely complied with a Gaussian distribution but could be approximated to some extent, dependency relationships between the variables in the GGM could be grasped.
 
-First, we considered how to process the dataset of darknet traffic.
-Darknet traffic for $T$ seconds used for one model learning is called a ``time slot''.
-We suppose there were $N$ source hosts in a time slot $t$.
+First, we considered how to process the dataset for darknet traffic.
+Darknet traffic for $T$ seconds used for one model learning was called a time slot.
+We suppose there were $N$ unique source hosts in a time slot $t$.
 A time series data was generated by counting the number of packets observed at a certain sampling interval for every source hosts.
-Here, if the number of time series samples is $M$, the sampling interval is $T/M$ {\it (sec.)}.
-Then, we convert from a time slot $t$ to data matrix
+Here, if the number of time series samples was $M$, the sampling interval was $T/M$ {\it (sec.)}
+Then, we converted from a time slot $t$ to data matrix D.
 \begin{equation*}
 \bm{D}_t=[D_{mn}]\in\mathbb{R}^{M \times N},
-\;\;D_{mn} := \log(x_n^{(m)}+\epsilon),
+\;\;D_{mn} := \log(x_n^{(m)}),
 \;\;\bm{x}^{(m)}\in\mathbb{N}_0^{N}.
 \end{equation*}
-Here, $\bm{x}^{(m)}$ means $N$-dimensional variables of the number of samples $M$, and $x_n^{(m)}$ represents the number of packets at the $m$-th point of the $n$-th source host.
+Here, $\bm{x}^{(m)}$ meant $N$-dimensional variables of the number of samples of $M$, and $x_n^{(m)}$ represented the number of packets at the $m$-th point of the $n$-th source host.
+Since log-transformation could not be performed when $x_n^{(m)}=0$, it was converted to an appropriate value $x_n^{(m)}=0.1$.
 Also, $\mathbb{N}_0=\{0,1,2,\cdots\}$.
-Since log-transformation can not be performed when $x_n^{(m)}=0$; we add a small real number $\epsilon$ to $x_n^{(m)}$ (e.g. $\epsilon=0.1$).
 
 Next, we obtain a precision matrix from the data matrix $\bm{D}_t$ using the graphical lasso algorithm and apply GGM.
-Then, a set of source host (variable) corresponds to a node set of a graph in the GGM, and a presence or absence of a dependence relationship (cooperativeness) of a source host pair (variable pair) corresponds to an edge set.
-The cooperativeness of host pairs means that there is no cooperativeness with that host pair when the time pattern of the number of packets received from each source host is conditionally independent between two hosts.
+Then, a set of source host (variable) corresponds to a node set of a graph in the GGM, and a presence or absence of a dependence relationship of a source host pair (variable pair) corresponds to an edge set.
+The cooperativeness of host pairs meant that there was no cooperativeness with that host pair when the time pattern of the number of packets received from each source host was conditionally independent between two hosts.
 
 
 
 
 \subsection{Algorithm of Batch-mode {\it GLASSO} Engine}
-We prepare darknet traffic observed over a long period of time (e.g. 3 days traffic) and divided traffic every $T$ seconds to create multiple time slots.
+We prepared darknet traffic observed over a long period of time (e.g. 3 days traffic) and divided traffic every $T$ seconds to create multiple time slots.
 At that time, we consider only SYN packets, TCP.
-Next, a data matrix $\bm{D}\in\mathbb{R}^{M \times N}$ is created for each time slot, and a sample covariance matrix $S\in\mathbb{R}^{N \times N}$ is obtained.
-The sample covariance matrix $S$ and a positive real number $r$ are input to the graphical lasso algorithm to obtain a sparsely estimated precision matrix ${(\hat{\Sigma^{-1}})}^{(r)}\in\mathbb{R}^{N \times N}$.
-Here, we try with some positive real numbers like $r \in R ( = \{r_1, r_2, \cdots, r_s\} \subset [0,\infty))$.
-From the estimated precision matrix, an undirected graph $G = \{V, E\}$ in GGM could be represented by node set $V=\{x_{1}, \cdots, x_{N}\}$ and edge set $E=\{(i,j)|{(\hat{\Sigma^{-1}})}_{ij}\neq0\}$.
-Then, in order to express the degree of cooperativeness between all pairs of source hosts in each time slot with scalar values, we obtained a graph density value $d^{(r)}=|E|/N(N-1)$ for each time slot.
-The graph density value represents the ratio of the actual number of edges to the number of edges of the complete graph.
-Finally, time slots corresponding to graph densities showing anomalously high values compared to all graph density values are determined using outlier detection techniques.
+Next, a data matrix $\bm{D}\in\mathbb{R}^{M \times N}$ was created for each time slot, and a sample covariance matrix $S\in\mathbb{R}^{N \times N}$ was obtained.
+The sample covariance matrix $S$ and a positive real number $r$ were input to the graphical lasso algorithm to obtain a sparsely estimated precision matrix ${(\hat{\Sigma^{-1}})}^{(r)}\in\mathbb{R}^{N \times N}$.
+Here, we tried with some positive real numbers like $r \in R ( = \{r_1, r_2, \cdots, r_s\}\in\mathbb{R}^s\;(\geq 0))$.
+From the estimated precision matrix, an undirected graph $G = \{V, E\}$ in GGM could be represented by node set $V=\{x_{1}, \cdots, x_{N}\}$ and edge set $E=\{(i,j)|\Sigma^{-1}_{ij}\neq0\}$.
+Then, in order to express the degree of cooperativeness between all pairs of source host in each time slot with scalar values, we obtained a graph density value $d^{(r)}=|E|/N(N-1)$ for each time slot.
+The graph density value represented the ratio of the actual number of edges to the number of edges of the complete graph.
+Finally, time slots corresponding to graph densities showing anomalously high values compared to all graph density values were determined using outlier detection techniques.
 
 
 
@@ -356,8 +350,8 @@ Based on our experience, if the sampling interval $T/M$ is about 50 seconds, we 
 
 
 \subsection{Regularization Coefficient $r$}
-The regularization coefficient $r\;(\geq 0)$ is an input parameter used in the graphical lasso algorithm.
-It is a hyper parameter to decide how much dependence is considered to be derived from noise, and adjusts a sparsity of an estimated precision matrix $\Sigma^{-1}$.
+The regularization coefficient $r\in\mathbb{R}\;(\geq 0)$ is an input parameter used in the graphical lasso algorithm.
+It is a threshold to decide how much dependence is considered to be derived from noise, and adjusts a sparsity of an estimated precision matrix $\Sigma^{-1}$.
 Here, it is similarly meaningful between scrape down weakly related dependencies and more severely measure a time pattern of the number of packets.
 Therefore, $r$ and $M$ have similar roles.
 As a feature of $r$, $d^{(r)}$ generally gets closer to 1 as $r$ gets closer to 0, and $d^{(r)}$ gets closer to 0 as $r$ gets bigger.
@@ -374,7 +368,7 @@ From the above, we finally decide to set $r \in R ( = \{0.4, 0.5, 0.6, 0.7, 0.8,
 
 
 
-\subsection{The Number of Graph Densities $K$ and Threshold $\theta$ for Alert Judgement}
+\subsection{The Number of Graph Densities $K$ and Threshold $\theta$ for Alert Judgment}
 The number of graph density values $K$ and the threshold $\theta$ used for alert judgment, as well as the relationship between $M$ and $r$, unless $K$ is set to an extreme number, it can be covered with $\theta$.
 The $K$ means the number of data used when detecting an outlier.
 When $K$ is too small, data that can be referred to by the outlier detection method is reduced, so the detection of outlier tends to be unstable.
@@ -394,6 +388,7 @@ Here, although there was a possibility that a slight deterioration in accuracy m
 
 
 \subsection{Enhance Preprocessing}
+
 We pre-excluded a destination TCP port that constantly observed packets from a large number of packets or source hosts for a long time.
 Such destination TCP ports could easily be noticed by anyone, and generally, those were kept observing for a while without a detection method.
 For the same reason, packets addressed to TCP ports intensively observed as alerts were excluded in advance.
@@ -405,6 +400,7 @@ We regularly updated such work automatically.
 
 
 \subsection{Real-time Operation of {\it GLASSO} Engine}
+
 In this section, the results of the {\it GLASSO} engine which operated for 1 month in October 2018 were shown.
 Input parameters of the {\it GLASSO} engine used for the operation were set to $T=600$ {\it (sec.)}, $M=12, K=432, \theta=0.98, r \in R ( = \{0.4, 0.5, 0.6, 0.7, 0.8, 0.9\}$.
 We considered only SYN packets, TCP and TCP ports 22, 23, 80, 81, 445, 2323, 3389, 5555, 8080, 50382, 50390, 52869 were excluded in advance as preprocessing.
@@ -465,7 +461,7 @@ However, since this paper covered the detection of malware activities, and {\it 
 
 
 
-Next, it could be assumed that 1,539 remaining alerts (47 remaing TCP ports) were network scans since many source hosts sent packets to a specific TCP port of many destination IP address cooperatively.
+Next, it could be assumed that 1,539 remaining alerts (47 remaining TCP ports) were network scans since many source hosts sent packets to a specific TCP port of many destination IP address cooperatively.
 There were two kinds of network scans of SYN packet reaching the darknet: cyber attacks and survey scans.
 In the case of an alert by survey scanners, since a size of the source hosts tended to be smaller than an alert by cyber attacks, we focused on a size of the source hosts and considered dividing it into cyber attacks and survey scans.
 In many cases, a survey scanner could be found from HTTP connection and a host name obtained by reverse lookup of a source host IP address.
@@ -532,19 +528,20 @@ Total  & 31  & 3  & 0   \\ \hline
 
 
 \subsection{Details of the Detected Malware Activity}
-In this section, we introduced the details of detected malware activities according to three attack types: IoT malware, router vulnerabilities, and other vulnerabilities.
-There were two types of malware used for cyber attacks: (1) malware that forms a botnet and receives a command from a command-and-control server and executes a network scan, (2) malware such as worms, computer viruses, etc. that spreads network scanning on a wide area to self-propagate.
+
+In this section, we discuss the details of detected malware activities according to three attack types: IoT malware, router vulnerabilities, and other vulnerabilities.
+There were two types of malware used for cyber attacks: (1) malware that forms a botnet and receives a command from a C2 server and executes a network scan, (2) malware such as worms, computer viruses, etc. that spreads network scanning on a wide area to self-propagate.
 
 
 \subsubsection{IoT Malware}
-The true positive 14 TCP ports of IoT malware type in Table~\ref{tab:answer} were roughly divided into three types of malware: Mirai, Hajime, HNS (Hide and Seek).
-First of all, the Mirai scanned many web-based TCP ports of port 80 and 8000 series and were spreading more and more to scan new web-based TCP ports.
+
+The true positive 14 TCP ports of IoT malware type in Table~\ref{tab:answer} were roughly divided into three types of malware: Mirai, Hajime, and HNS (Hide and Seek).
+First, the Mirai scanned many web-based TCP ports of port 80 and 8000 series and were spreading more and more to scan new web-based TCP ports.
 Next, the Hajime regularly scanned TCP ports 5358, 9000.
 Finally, it is reported that the HNS scanned TCP port 23, 80, 8080, 2480, 5984 and random port~\cite{Netlab_HNS}.
 
-
-
 \subsubsection{Router Vulnerability}
+
 The true positive 11 TCP ports of router vulnerability in Table~\ref{tab:answer} were divided into malware activities against vulnerabilities that presented in the router products of five manufacturers~\cite{Huawei,Netlab_BCM,Netlab_MikroTik}.
 First, vulnerabilities existed in the router product of manufacturer A, and as a result of infecting many routers with malware, network scannings by a large number of routers were performed in a short time in several TCP ports 21, 110, 443, 8291, 23023, 65000.
 Next, other network scans with features of Mirai were observed from infected routers using the vulnerability of manufacturer B, C, D's router products (TCP ports 8001, 8081, 8181, 37215).
@@ -570,6 +567,7 @@ At this point, the {\it GLASSO} engine detected when the number of source hosts 
 %本節では見逃し，一点集中型，survey scanに対する考察を行う．
 
 \section{Consideration on False Negative}
+
 In this section, we considerate about the false negative in this time.
 Scans with the features of Mirai were observed to TCP port numbers 444 and 8010, and scans for searching CMS (Content Management System) service to TCP port number 2004 were observed.
 Looking at the number of source hosts for 10 minutes by each darknet sensor, 161 source hosts were observed when TCP port 8010 is a peak, while TCP ports 444 and 2004 were observed at most 19, 23 source hosts.
@@ -603,26 +601,33 @@ As a countermeasure for such false negatives, considering a method that can incr
 
 
 \section{Conclusion}
-We have proposed a malware activity detection engine which enables real-time processing and respond more quickly that could not be done with the {\it GLASSO} engine in the earlier work.
-It was found that there are 3 types of alerts obtained from the {\it GLASSO} engine (cyber attack, survey scan, {\it one-dst centralized}), and by sorting proper criteria, it was possible to separate alerts into 3 types.
-We made limited ground truth, evaluated malware activity detection accuracy of the {\it GLASSO} engine, and introduced the details of that malware activities.
-In addition, it was able to detect what could not be detected by the conventional method.
-The {\it GLASSO} engine missed several malware activities, but we considered about counter-measures.
 
+The proposed {\it GLASSO} engine, unlike our earlier work~\cite{Han}, makes it possible to detect new malware activities in real time and thus enables us to respond situations more quickly.
+Various evaluation have been conducted to demonstrate the effectiveness of the engine.
+We clarified that the engine produced alerts for three types of activities, i.e., cyber attack, survey scan, and {\it one-dst centralized}, and they can be properly distinguished by preparing proper criteria.
+We made limited ground truth by manual analysis, with which we evaluated the malware activity detection performance of the engine and analyzed the details of the detected activities.
+Moreover, the engine detected anomalous events that could not have been detected by the conventional method.
+Although the engine suffers from some false negatives, we believe it could be alleviated by properly preparing the environment.
+Therefore, we conclude that the proposed {\it GLASSO} engine can automatically and precisely grasp indiscriminate cyber attacks like network scans in real-time.
 
-As a future work, we would like to adjust the {\it GLASSO} engine so as to reduce overlooking and evaluate the adequacy of the detection time on an appropriate basis by operating over a long period of time.
-Then, we would like to investigate the truth of {\it one-dst centralized}) using another dataset (such as honeypot) other than darknet.
+This work is yet to be improved further.
+First, {\it GLASSO} engine could be optimized further to reduce false negatives.
+Second, pilot operation with the engine should be also conducted to evaluate its practical effectiveness over a long period of time.
+Third, The phenomenon, we call as {\it one-dst centralized}, remains unclear; further investigation on this phenomenon should be conducted using another dataset generated from honeypot in addition to darknet.
 Finally, since it was found that the {\it GLASSO} engine can detect not only cyber attacks but also survey scanners, we would like to detect survey scanners as an extension study.
+Through these work, we hope to streamline security operations and reduce the burden of network security operators and incident response teams.
 
 
 
-\section*{Acknowledgement}
-The authors thank associate Prof. K. Yoshioka from the Yokohama National University and  Prof. N. Murata from the Waseda Univeristy for their valuable comments.
+
+
+\section*{Acknowledgment}
+The authors thank associate Prof. K. Yoshioka from the Yokohama National University and  Prof. N. Murata from the Waseda University for their valuable comments.
 
 
 \begin{thebibliography}{99}
-\bibitem{Akiyama}
-M. Akiyama, T. Kawamoto, M. Shimamura, T. Yokoyama, Y. Kadobayashi, and S. Yamaguchi. A Proposal of Metrics for Botnet Detection based on Its Cooperative Behavior. In {\it Proceedings of the 2007 International Symposium on Applications and the Internet Workshops(SAINT-W'07)}, pp.82-85, 2007.
+%\bibitem{Akiyama}
+%M. Akiyama, T. Kawamoto, M. Shimamura, T. Yokoyama, Y. Kadobayashi, and S. Yamaguchi. A Proposal of Metrics for Botnet Detection based on Its Cooperative Behavior. In {\it Proceedings of the 2007 International Symposium on Applications and the Internet Workshops(SAINT-W'07)}, pp.82-85, 2007.
 
 \bibitem{Ban}
 T. Ban, L. Zhu, J. Shimamura, S. Pang, D. Inoue, and K. Nakao. Detection of botnet activities through the lens of a large-scale darknet. In {\it International Conference on Neural Information Processing, Springer}, 2017.
