@@ -80,7 +80,7 @@ It also provides alerts when the estimated cooperation changes significantly; it
 This approach is robust with regard to noise: packets that arrive accidentally in our darknet space due to misconfigurations will not show cooperation.
 Moreover, this approach ignores activities with weak cooperation.
 
-However, since the {\it GLASSO} engine in~\cite{Han} works in batch mode and requires three days’ darknet traffic to process, the analysis result will not be provided in real time and will be delayed by more than three days in the worst-case.
+However, since the {\it GLASSO} engine in~\cite{Han} works in batch mode and requires three days' darknet traffic to process, the analysis result will not be provided in real time and will be delayed by more than three days in the worst-case.
 Accordingly, in this paper, we propose an online processing algorithm of the {\it GLASSO} engine that extends our earlier method~\cite{Han}, making it possible to detect the outliers sequentially and in real time.
 In our evaluation, we measure the detection performance of the proposed method with our proof-of-concept implementation to demonstrate its feasibility and effectiveness in terms of detecting the rise of new malware activities in real time.
 For this evaluation, we manually prepared the list of malicious events and the port numbers they used; these events and port numbers should be identified by the proposed algorithm.
@@ -93,38 +93,38 @@ With the list, we evaluate the detection performance of the {\it GLASSO} engine 
 This paper offers the following contributions:
 \begin{enumerate}
 	\item We proposed an online processing algorithm of the {\it GLASSO} engine and undertook outlier detection sequentially.
-  It was possible to detect outliers with a very short span compared to earlier work and obtain alert results in real time. (discussed in Section V)
-	\item We tuned important parameters in the {\it GLASSO} engine. (discussed in Section V\hspace{-.1em}I)
+  It was possible to detect outliers with a very short span compared to earlier work and obtain alert results in real time. (Discussed in Section V)
+	\item We tuned important parameters in the {\it GLASSO} engine. (Discussed in Section V\hspace{-.1em}I)
 	\item We operated the {\it GLASSO} engine in real time using live darknet traffic (raw packets) and obtained detection results without delay.
-  We also analyzed the detection results by destination TCP ports (by services). (discussed in Section V\hspace{-.1em}I\hspace{-.1em}I-B, C)
+  We also analyzed the detection results by destination TCP ports (by services). (Discussed in Section V\hspace{-.1em}I\hspace{-.1em}I-B, C)
   \item We evaluated the detection performance of malware activities using the limited ground truth.
   This is the first and practical evaluation of the detection performance of malware activities on the darknet, and we explained the details of the detected malware activities.
-  Finally, we considered some countermeasures against several malware activities that the {\it GLASSO} engine missed. (discussed in Section V\hspace{-.1em}I\hspace{-.1em}I-D, E and V\hspace{-.1em}I\hspace{-.1em}I\hspace{-.1em}I)
+  Finally, we considered some countermeasures against several malware activities that the {\it GLASSO} engine missed. (Discussed in Sections V\hspace{-.1em}I\hspace{-.1em}I-D, E and V\hspace{-.1em}I\hspace{-.1em}I\hspace{-.1em}I)
 \end{enumerate}
 
 
 
 \section{Background}
-In this section, the overview of our fundamental tools, i.e., a darknet, graphical Gaussian model, and graphical lasso algorithm, are presented.
+In this section, we present an overview of our fundamental tools, i.e. the darknet, the graphical Gaussian model, and the graphical lasso algorithm.
 
 \subsection{Darknet}
 The Internet can be categorized into two types of networks: livenet and darknet.
 A livenet is a network of busy IP addresses, while a darknet is a network of unused IP addresses.
-We set up receivers (sensors) on our darknets and passively capture all the traffic arriving at these receivers.
-Most of the packets in the traffic are TCP packets with SYN flag on, i.e., TCP-SYN packets.
+We have set up receivers (sensors) on our darknets and passively capture all the traffic arriving at these receivers.
+Most of the packets in the traffic are TCP packets with the SYN flag on, i.e. TCP-SYN packets.
 TCP-SYN packets reaching a darknet are non-ordinary packets; these are often scans or unintended packets sent by misconfigured network devices.
 The scans may be initiated by malware for indiscriminately locating the next victim candidates or by any other entities for investigating and researching the Internet.
-In this paper, a network scan that indiscriminately tried attacks and intrusions by malware through vulnerable TCP ports is called a cyber attack, and a network scan that indiscriminately tried surveys and researches by organizations like Shodan and Censys is called a survey scan.
+In this paper, a network scan that has indiscriminately attempted attacks and intrusions by malware through vulnerable TCP ports is called a cyberattack, and a network scan that has indiscriminately attempted surveys and research by organizations like Shodan and Censys is called a survey scan.
 
 
 
 \subsection{Graphical Gaussian Model}
 A graphical Gaussian model (hereinafter, GGM) is a probabilistic model for which a graph expresses the dependence structure between random variables given a multivariate Gaussian distribution.
-To measure the dependency structure between random variables, one may obtain correlation coefficients, but it may include spurious correlation between random variables is included.
-To cope with the issue, there is a method of obtaining a precision matrix $\Sigma^{-1}$ (the inverse of the covariance matrix $\Sigma$) from which conditional independence of a pair of random variables can be measured~\cite{Ide}.
-If and only if when $(\Sigma^{-1})_{ij}=0$, then $x_ {i}$ and $x_ {j}$ are independent conditioned on all the other variables.
-The definition of the graph in the GGM using the precision matrix $\Sigma^{-1}\in\mathbb{R}^{N \times N}$ of a sequence of random variables following an $N$-dimensional multivariate Gaussian distribution is as follows: $N$ random variables correspond to the nodes, and if a matrix element of $(\Sigma^{-1})_{ij}$ is zero, there is no edge between variables $x_i$ and $x_j$, if a matrix element is non-zero, there is edge between variables $x_i$ and $x_j$.
-In other words, the graph in GGM using this precision matrix shows conditional independence of all pairs of random variables.
+To measure the dependency structure between random variables, one may obtain correlation coefficients, but it may include spurious correlation between random variables.
+To address this the issue, there is a method of obtaining a precision matrix $\Sigma^{-1}$ (the inverse of the covariance matrix $\Sigma$) from which the conditional independence of a pair of random variables can be measured~\cite{Ide}.
+If and only if $(\Sigma^{-1})_{ij}=0$, then $x_ {i}$ and $x_ {j}$ are independent, conditioned on all the other variables.
+The definition of the graph in the GGM using the precision matrix $\Sigma^{-1}\in\mathbb{R}^{N \times N}$ of a sequence of random variables following an $N$-dimensional multivariate Gaussian distribution is as follows: $N$ random variables correspond to the nodes, and if a matrix element of $(\Sigma^{-1})_{ij}$ is zero, there is no edge between variables $x_i$ and $x_j$, and if a matrix element is non-zero, there is an edge between variables $x_i$ and $x_j$.
+In other words, the graph in GGM using this precision matrix shows the conditional independence of all pairs of random variables.
 
 
 
@@ -132,25 +132,25 @@ In other words, the graph in GGM using this precision matrix shows conditional i
 The maximum-likelihood estimation of a precision matrix $\Sigma^{-1}$ is the inverse matrix of the sample covariance matrix $S$.
 We expect the precision matrix $\Sigma^{-1}$ to be a sparse matrix such that variable pairs with essential dependencies take nonzero values and perhaps weakly related variable pairs with noise take zero.
 In general, however, the elements of the sample covariance matrix $S$ cannot be strictly zero, and the empirical precision matrix $S^{-1}$ is also not generally sparse.
-Therefore, the ``graphical lasso'' which is a sparse structure learning algorithm optimizes a precision matrix by solving a penalized maximum likelihood equation with $\ell_1$ regularization term in one column (one row) and estimates a sparse precision matrix $\hat{\Sigma^{-1}}$ without explicit inverse matrix calculation~\cite{Friedman}.
+Accordingly, the graphical lasso, which is a sparse structure learning algorithm, optimizes a precision matrix by solving a penalized maximum-likelihood equation with $\ell_1$ regularization term in one column (one row) and estimates a sparse precision matrix $\hat{\Sigma^{-1}}$ without explicit inverse matrix calculation~\cite{Friedman}.
 The input arguments of the graphical lasso algorithm are the sample covariance matrix $S$ and the $\ell_1$ regularization coefficient $r\;(\geq 0)$.
-Here, $r$ is a hyperparameter to decide how much dependency is regarded as noise-derived, and it is possible to adjust the sparsity of the precision matrix to be estimated.
-From the above, the GGM graph using the precision matrix $\hat{\Sigma^{-1}}$ estimated by the graphical lasso algorithm express more essential dependencies of all variable pairs than the maximum-likelihood estimate of the precision matrix.
+Here, $r$ is a hyperparameter for deciding how much dependency is regarded as noise-derived, and it is possible to adjust the sparsity of the precision matrix to be estimated.
+From the above, the GGM graph using the precision matrix $\hat{\Sigma^{-1}}$ estimated by the graphical lasso algorithm expresses the more essential dependencies of all variable pairs than the maximum-likelihood estimation of the precision matrix.
 
 
 
 \section{Related Work}
-Many studies using darknet has been carried out and showed its usefulness on analyzing Internet-wide scanning.
-Dainotti {\it et al.} developed and evaluated a methodology for removing spoofed traffic from both darknets and live networks, and contributed to support census-like analyses of IP address space utilization~\cite{Dainotti}.
-Durumeric {\it et al.} analyzed a large-scale darknet to investigate scanning activities, and identified patterns in large horizontal scanning operations~\cite{Durumeric}.
-Also, they presented an analysis of the latest network scanning on the overall landscape, and its influence, and countermeasures of the defender in detail.
-Fachkha {\it et al.} devised inference and characterization modules for extracting and analyzing cyber-physical systems (CPS) probing activities toward ample CPS protocols by correlating and analyzed various dimensions of a large amount of darknet data~\cite{Fachkha}.
+Many studies using darknets have been carried out and have shown their usefulness for analyzing Internet-wide scanning.
+Dainotti {\it et al.} developed and evaluated a methodology for removing spoofed traffic from both darknets and live networks and contributed to supportting census-like analyses of IP address space utilization~\cite{Dainotti}.
+Durumeric {\it et al.} analyzed a large-scale darknet to investigate scanning activities and identified patterns in large horizontal scanning operations~\cite{Durumeric}.
+They also presented an analysis of the latest network scanning on the overall landscape, along with its influence, and countermeasures of the defender in detail.
+Fachkha {\it et al.} devised inference and characterization modules for extracting and analyzing cyber-physical systems (CPS) probing activities toward sufficient CPS protocols by correlating and analyzing the various dimensions of a large amount of darknet data~\cite{Fachkha}.
 
 
 Ban {\it et al.}~\cite{Ban} proposed an abrupt-change detection algorithm that detected botnet-probe campaigns with a high detection rate by exploring the temporal coincidence in botnet activities visible in darknet traffic.
-Although this method used abrupt-change of time series traffic volume addressed to one TCP port, in recent malware activities, there are many cases where abrupt-change cannot be done successfully due to multiple campaigns being overlapped or being scanned constantly.
-Moreover, since the {\it GLASSO} engine processed the entire live traffic without restriction, the range of the dataset was different from the abrupt-change detection algorithm.
-Actually, research using a darknet to detect malware activities of similar scale in the same dataset range as the {\it GLASSO} engine did not exist as far as we know and it was difficult to compare and evaluate.
+Although this method used the abrupt-change of time series traffic volume addressed to one TCP port, in recent malware activities, there have been many cases where an abrupt-change cannot be undertaken successfully due to multiple campaigns being overlapped or being scanned constantly.
+Moreover, since the {\it GLASSO} engine processed the entire live traffic without restrictions, the range of the dataset was different from the abrupt-change detection algorithm.
+In fact, research using the darknet to detect malware activities of similar scale in the same dataset range as the {\it GLASSO} engine did not exist as far as we know, and it was difficult to compare and evaluate.
 
 
 
@@ -660,7 +660,7 @@ Netlab 360, HNS Botnet Recent Activities. \url{https://blog.netlab.360.com/hns-b
 Netlab 360, BCMPUPnP\_Hunter: A 100k Botnet Turns Home Routers to Email Spammers. \url{https://blog.netlab.360.com/bcmpupnp_hunter-a-100k-botnet-turns-home-routers-to-email-spammers-en/}, [Accessed Dec. 2018].
 
 \bibitem{Netlab_MikroTik}
-Netlab 360, 7,500+ MikroTik Routers Are Forwarding Owners’ Traffic to the Attackers, How is Yours?. \url{https://blog.netlab.360.com/7500-mikrotik-routers-are-forwarding-owners-traffic-to-the-attackers-how-is-yours-en/}, [Accessed Dec. 2018].
+Netlab 360, 7,500+ MikroTik Routers Are Forwarding Owners' Traffic to the Attackers, How is Yours?. \url{https://blog.netlab.360.com/7500-mikrotik-routers-are-forwarding-owners-traffic-to-the-attackers-how-is-yours-en/}, [Accessed Dec. 2018].
 
 
 \end{thebibliography}
