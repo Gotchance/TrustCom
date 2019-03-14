@@ -1,277 +1,452 @@
-Abstract
+\begin{abstract}
 An increasing amount of malicious traffic from malware has recently been causing severe security incidents, making cyberspace less secure.
-It is known that some malware often displays synchronized behavior because specific actions are performed simultaneously by command & control servers or attackers.
-Our previous method monitors traffic arriving from darknets and detects the malicious cooperative activities of the sources of this traffic by using the graphical lasso, a well-known sparse learning algorithm.
+It is known that some network scanning events often display synchronized behaviors because specific actions are performed simultaneously by command and control servers or attackers.
+Our earlier method monitors traffic arriving at a darknet and estimates the malicious cooperative communications of the sources of this traffic by using the graphical lasso, a well-known sparse learning algorithm.
 The method was effective but was unable to cope with real-time analysis because it relies on batch learning.
-In this study, we propose a method that captures anomalous cooperative behavior in real-time.
-At the same time, program processing time is shortened.
-To demonstrate the feasibility of the proposed method, a prototype was implemented, and several security incidents were detected by using real darknet traffic data.
-A performance evaluation was also conducted in terms of processing time and accuracy of security alerts to demonstrate the effectiveness and efficiency of the proposed method.
+In this study, we propose a method that captures anomalous cooperative relationships in real-time and with shortening processing time through parameter tunings.
+To demonstrate the feasibility of the proposed method, a prototype was implemented, and a summary in terms of processing time and security alerts was shown by using real darknet traffic data for a performance evaluation.
+Also, we presented several security incidents to demonstrate effectiveness.
+\end{abstract}
 
-Ⅰ.
-Introduction
+
+
+\section{Introduction}
 Threats in cyberspace have continued to grow and become diverse recently, and the number of variants and unknown attacks is increasing.
-The Network Incident Analysis Center for Tactical Emergency Response (NICTER) detects such detrimental incidents and threats on the Internet, and it releases information on threats and takes effective countermeasures.
-NICTER currently cooperates with organizations in about 40 countries, and it operates and monitors a large-scale black hole sensor on [a darknet | darknets?] of around 300,000 IP addresses to [determine | monitor?] the trend of malicious activities occurring on the Internet.
+The Network Incident Analysis Center for Tactical Emergency Response (NICTER) detects such detrimental security incidents and threats on the Internet, and it releases information on threats and takes effective countermeasures~\cite{NICTERWEB}.
+The NICTER operates and monitors a large-scale darknet of around 300,000 IP addresses.
 Darknet refers to a set of accessible but unused subspaces of the Internet.
-A black hole sensor is a receiver (sensor) that collects packets without responding to senders of packets at all.
-Almost all packets reaching darknets originate from malicious activities.
-Darknets reflect global trends in malicious activities on the Internet, and a lot of research analyzes darknet traffic on the Internet.
-In recent years, the traffic volume of our darknets and cyber-attacks has increased dramatically every year.
-Our organization has detected abnormalities [from | reported by?] NICTER by using a [heuristic rule-based | rule-based heuristic?], but the number of alerts is increasing, and the attacks are becoming diverse; consequently, it has become more difficult to detect alerts with the usual methods.
-Therefore, we worked on a method that uses machine learning and that can automatically detect anomalies with high accuracy.
-Akiyama et al.
-defined three metrics for detecting botnets through analyzing their behaviors: relationship, response, and synchronization (cooperativeness).
-Among these metrics, we focused on the cooperative activities of malware that simultaneously operates on multiple hosts (devices) synchronously from darknet traffic.
-We devised a method for detecting malicious activities automatically from darknet traffic by estimating the cooperative relationships among hosts on the basis of an unsupervised machine learning method.
-Specifically, among the types of malware that perform cooperative actions, our detection targets are hosts that collaborate with infected devices with the same malware, such as worms, malicious scan activities, and exploit codes, to attack vulnerability.
-Moreover, infected devices with botnets that spread like worms targeting IoT devices, such as Mirai, Bashlite, and Hajime, are also targets of detection.
-As reported in paper [13], communications between infected devices are not required to detect [them | these targets?], so [it | our method?] can detect infected devices regardless of a C&C server's structures and protocols used.
-In other words, [it | the method?] is effective even if botmasters change their C&C communication protocol and structure.
-Also, it does not require payload information.
-Furthermore, since our method captures synchronous behaviors between hosts without supervisors and labeled data, irrespective of whether malware is known, even unknown attacks can be effectively detected if cooperative actions can be captured.
-We briefly show the procedure of the method of our previous study below.
-[The input | One of the inputs?] of this method is the source host IP addresses observed during a certain period of traffic and the number of packets received by those hosts.
-Cooperative relationships among hosts are estimated by using the graphical lasso, which is well-known as a sparse structure learning algorithm.
-Finally, values obtained by quantifying the estimated cooperative relationships by using graph density are [an output | one of the outputs?].
-Cases where the graph density value during a certain period is abnormally higher than other periods are determined as an alert.
-During these certain periods, it is judged that malicious activities have been made to the [destination port that has | destination ports that have?] the highest ratio of unique hosts among the period, and the hosts that sent packets to [that port | those ports?] are regarded as malicious hosts.
+The NICTER has a receiver (sensor) that collects packets without responding to senders of packets at all.
+Almost all packets except misconfigurations reaching a darknet originate from malicious activities, thus darknet traffic reflect global trends in malicious activities on the Internet, and a lot of research analyzes darknet traffic to detect malicious activities~\cite{Ban, Dainotti, Durumeric, Fachkha, Yamauchi}.
+
+In our darknet, a lot of malicious indiscriminate scanning events by botnets such as Mirai, and malware such as worms are observed.
+The trend of such scanning events often changes drastically, activities of new species and subspecies are also frequently appearing.
+When detecting a threat, the NICTER mainly checks change points of the number of packets and hosts for each destination port.
+Because attacks are becoming diverse, the number of alerts is increasing; consequently, it has become more difficult to detect true alerts with the usual methods.
+Also, merely by monitoring the change point of darknet traffic, packets that accidentally arrive such as misconfigurations also will be caught as changes.
+Therefore, we need to devise a countermeasure that can mechanically detect cyber threats on darknet traffic in any case.
+
+Akiyama {\it et al.} defined three metrics for detecting botnets through analyzing their behaviors: relationship, response, and synchronization (cooperativeness)~\cite{Akiyama}.
+Among these metrics, we focus on the cooperative relationships of scanning events that simultaneously operates on multiple hosts (devices) from darknet traffic.
+In our earlier work, we devised a method for detecting malicious activities automatically from darknet traffic by estimating cooperative relationships among the source hosts from a tendency of packet counts for each host on the basis of an unsupervised machine learning method~\cite{Han}.
+It is expected that accidentally arrived packets such as misconfigurations will be excepted by capturing cooperative relationships.
+Furthermore, by excluding traffic from benign scanners such as Shodan, Censys, and Shadowserver, it could be regarded as malicious scanning events when we observed cooperative communications between source hosts from darknet traffic.
+Specifically, among the types of malicious scanning events that perform cooperative actions, our detection targets are hosts that collaborate with infected devices with the same malware (e.g., worms, exploit codes), to attack vulnerability~\cite{CyberLab}.
+In addition, infected devices with botnets that spread like worms targeting IoT devices, such as Mirai, Bashlite, and Hajime, are also targets of detection.
+
+The advantages of our earlier method~\cite{Han} include: (1) it is not required communications between infected devices to detect these targets, so it can detect infected devices regardless of a command and control (C\&C) server's structures and protocols used.
+In other words, it is effective even if botmasters change their C\&C communication protocol and structure.
+(2) it does not require payload information.
+it only uses information of packet counts for each host.
+(3) since our method estimates cooperative relationships between hosts without supervisors and labeled data, irrespective of whether malware is known, even unknown attacks can be effectively detected if cooperative actions can be captured.
+We briefly show the procedure of our earlier method~\cite{Han} below.
+The input of this method is the source host IP addresses observed during a certain period of traffic and the number of packets received by those hosts.
+Cooperative relationships among the source hosts are estimated by using the graphical lasso~\cite{Friedman}, which is well-known as a sparse structure learning algorithm.
+Next, values obtained by quantifying the estimated cooperative relationships by using graph density are an output.
+Cases, where the graph density value during a certain period is abnormally higher than other periods, are determined as an alert.
+During these certain periods, it is judged that coordinated malicious activities have been made to the destination ports that have the highest ratio of source hosts among the period, and the hosts that sent packets to those ports are regarded as malicious hosts.
 This helps in investigating causes of malicious activities.
-However, this method requires 3 days of traffic data as a sample for detection, so it needs [to store the traffic data of 3 days | to collect 3 days' worth of data?] before processing; hence, the detection will be delayed by 3 days at most, excluding the processing time.
+
+However, this method requires 3 days of traffic data as a sample for detection, so it needs to store the traffic data of 3 days before processing; hence, the detection will be delayed by 3 days at most, excluding the processing time.
 In other words, real-time detection is impossible.
-Since, in cybersecurity, cyberattacks must be detected as soon as possible to take prompt countermeasures, the impossibility of real-time processing is a great weak point.
-Accordingly, the main challenge of this paper is to enable this method for analyzing darknet traffic with machine learning to detect attacks in real-time.
- Contribution.
+Since, in cybersecurity, cyberattacks must be detected as soon as possible to take prompt countermeasures, the impossibility of real-time processing is a crucial weak point.
+Accordingly, in this paper, we propose a method that analyzes darknet traffic and detects attacks in real-time.
+
+\noindent
+\textbf{Contribution.}\space\space
 This paper offers the following contributions:
-1)	The previous work was effective but restrictive because its process was a batch learning type, which means that it could not be used for real-time analysis.
-Therefore, we propose a novel algorithm and a method for judging alerts for online processing.
-2)	We reduce the computational cost through parameter tuning.
-3)	We present several instances among the alerts obtained from our proposed method's continuous operation.
+\begin{enumerate}
+	\item The earlier work~\cite{Han} was effective but restrictive because its process was a batch learning type, which means that it could not be used for real-time analysis.
+Therefore, we proposed a novel algorithm and a method for judging alerts for online processing. (discussed in Section I\hspace{-.1em}V)
+	\item We implemented a prototype of our proposed method, evaluated its performance and shortened the processing time through parameter tuning. (discussed in Section V)
+	\item We presented a summary of alerts and described instances related to a mining botnet, a spam botnet, and a Hajime botnet variant among the alerts obtained from a pilot operation. (discussed in Section V\hspace{-.1em}I)
+\end{enumerate}
 
-Ⅱ.
-Related Work
-Many techniques have been studied for detecting [botnets via cooperative behavior | botnets that behave in cooperation?].
-BotSniffer uses statistical algorithms to detect botnets in a centralized topology on the basis of their multiple crowd-like behaviors.
-BotMiner uses a detection framework that extends BotSniffer to perform clustering with monitored C&C communication and malicious activities, and it issues final detection results by cross-correlation.
-Garcia et al.
-applied a clustering algorithm to detect synchronization in bots and botnet behavior.
-This synchronization was studied for the relationship between IP addresses, ports, and time frames only.
-In this study, malware that performs coordinated malignant activities is detected by capturing cooperative relationships between hosts by using the graphical lasso.
-Next, we investigated studies that used darknets as a data source.
-Many studies on darknets are ongoing.
-Dainotti et al.
-proposed a methodology for removing spoofed traffic from both darknets and live networks and contributed to [the utilization inference | utilizing the inference?] of IP address spaces.
-Durumeric et al.
-analyzed a large-scale darknet to investigate scanning activities, disclosed large horizontal scan operations, and identified patterns in scanning operations.
-Fachkha et al.
-devised inference and characterization modules for extracting and analyzing cyber-physical systems (CPS) probing activities towards ample CPS protocols by correlating and analyzing various dimensions of a large amount of darknet data.
-Ban et al.
-proposed an abrupt-change detection algorithm that can detect botnet-probe campaigns with a high detection rate by exploring the temporal coincidence in botnet activities visible in darknets.
-Finally, we devised another method to determine the cooperative relationships of hosts from darknets similar to the present method.
-Although our method estimates cooperative relations among hosts by using the graphical lasso algorithm, the method of Yamauchi et al.
-decomposes observed hosts into several host groups by using non-negative matrix factorization (NMF) and captures cooperative relationships.
+
+\section{Related Work}
+Many techniques have been studied for detecting botnets that behave in cooperation.
+BotSniffer uses anomaly-based detection algorithms to identify both IRC and HTTP based C\&Cs in a port independent manner on the basis of their multiple crowd-like behaviors~\cite{Gu}.
+BotMiner extends BotSniffer to perform clustering with monitored C\&C communication and malicious activities, and it issues final detection results by cross-correlation~\cite{Gu2}.
+Garc\'{i}a {\it et al.} applied a clustering algorithm to detect synchronization in bots and botnet behavior~\cite{Garcia2}.
+As in above studies, there are several methods to capture cooperative behaviors of botnets, but in this study, we considered a model that estimates cooperative relationships among source hosts of darknet traffic by using the graphical lasso which is a well-known sparse structure learning algorithm.
+
+Next, we investigated studies that used darknet traffic as a data source.
+Dainotti {\it et al.} proposed a methodology for removing spoofed traffic from both darknet and live networks and contributed to utilizing the inference of IP address spaces~\cite{Dainotti}.
+Durumeric {\it et al.} analyzed a large-scale darknet to investigate scanning activities, disclosed large horizontal scan operations, and identified patterns in scanning operations~\cite{Durumeric}.
+Fachkha {\it et al.} devised inference and characterization modules for extracting and analyzing cyber-physical systems (CPS) probing activities towards ample CPS protocols by correlating and analyzing various dimensions of a large amount of darknet data~\cite{Fachkha}.
+Ban {\it et al.} proposed an abrupt-change detection algorithm that can detect botnet-probe campaigns with a high detection rate by exploring the temporal coincidence in botnet activities visible in darknet traffic~\cite{Ban}.
+As described above, many studies using darknet traffic have been carried out, showing their usefulness.
+
+Finally, there is another method to determine the cooperative relationships of hosts from darknet traffic similar to the present method.
+Although our method estimates cooperative relationships among the source hosts by using the graphical lasso algorithm, the method of Yamauchi {\it et al.} decomposes observed hosts into several host groups by using non-negative matrix factorization (NMF) and captures cooperative relationships~\cite{Yamauchi}.
 These two different methods differ in characteristics captured when capturing the cooperative relationship of the hosts, so the results may be different.
-[As we experienced in the past, it | It?] is known that the method of Yamauchi et al.
-is not suitable for small-scale data sources.
-However, our method can capture cooperative behaviors even for small-scale data sources.
+As we experienced in the past, it is known that the method of Yamauchi {\it et al.} is not suitable for small-scale data sources.
+However, our method can capture cooperative relationships even for small-scale data sources.
 
-Ⅲ.
-Previous Studies
-In this section, we provide an overview of a graphical Gaussian model.
-Next, we present how to apply the model to darknet traffic data and present an outline of sparse structure learning with the graphical lasso algorithm.
+\section{Earlier Work}
+In this section, before introducing the proposal of this study, we introduce backgrounds of our earlier work~\cite{Han} which is also used in this study.
+First, we provide an overview of a graphical Gaussian model.
+Second, we present how to apply the model to darknet traffic data and present an outline of sparse structure learning with the graphical lasso algorithm.
 Finally, we describe the introduction of graph densities.
 
-A.	Graphical Gaussian Model
-Previous studies used the graphical Gaussian model (hereinafter referred to as the GGM), a basic model that expresses linear dependencies between variables in a graph.
-In the GGM, it is assumed that an N-dimensional random variable sequence \bm{x}=(x_{1},x_{2},\cdots,x_{N})^\mathrm{T} \in\mathbb{R}^N follows an N-dimensional multivariate Gaussian distribution.
-The distribution can be expressed as
+\subsection{Graphical Gaussian Model}
+Our studies used the graphical Gaussian model (GGM), a basic model that expresses linear dependencies between variables in a graph.
+In the GGM, it is assumed that an $N$-dimensional random variable sequence $\bm{x}=(x_{1},x_{2},\cdots,x_{N})^\mathrm{T}\in\mathbb{R}^N$ follows an $N$-dimensional multivariate Gaussian distribution.
+The multivariate Gaussian distribution can be expressed as
+\begin{equation}
+\label{eq:mgd}
 \mathcal{N}({\bm{x}}|\mu,\Sigma)=\frac{\mathrm{det} (\Sigma^{-1})^{1/2}}{(2\pi)^{N/2}}\exp\left(-\frac{1}{2}(\bm{x}-\mu)^\mathrm{T}{\Sigma^{-1}}(\bm{x}-\mu)\right),
-where \mu\in\mathbb{R}^N is the mean of \bm{x}, \Sigma\in\mathbb{R}^{N \times N} is a covariance matrix, and \Sigma^{-1}\in\mathbb{R}^{N \times N} is a precision matrix.
-Both a covariance matrix \Sigma and a precision matrix \Sigma^{-1} are symmetric positive definite matrices.
-Also, the determinant of a matrices A is written as \mathrm{det}(A).
-Under the assumption of a multivariate Gaussian distribution, only when \Sigma^{-1}_{ij} is 0 can x_ {i} and x_ {j} be statistically independent, given other random variables.
+\end{equation}
+where $\mu\in\mathbb{R}^N$ is the mean of $\bm{x}$, $\Sigma\in\mathbb{R}^{N \times N}$ is a covariance matrix, and $\Sigma^{-1}\in\mathbb{R}^{N \times N}$ is a precision matrix.
+Both a covariance matrix $\Sigma$ and a precision matrix $\Sigma^{-1}$ are symmetric positive definite matrices.
+Also, the determinant of a matrix A is written as $\mathrm{det}(A)$.
+
+Under the assumption of a multivariate Gaussian distribution, only when $\Sigma^{-1}_{ij}$ is $0$ can $x_ {i}$ and $x_ {j}$ be statistically independent, given other random variables.
 In other words, it can be expressed as follows.
-\Sigma^{-1}_{ij}=0\Leftrightarrow x_i \perp x_j | \bm{x} \setminus \{ x_i, x_j \}.
+\begin{equation*}
+\Sigma^{-1}_{ij}=0\Leftrightarrow x_i \perp x_j | \bm{x} \setminus \{ x_i, x_j \}
+\end{equation*}
 For the Gaussian distribution, independence implies uncorrelatedness.
-That is, \Sigma^{-1}_{ij}=0 indicates that there is no cooperative relationship between variables x_{i} and x_{j}.
+That is, $\Sigma^{-1}_{ij}=0$ indicates that there is no cooperative relationship between variables $x_{i}$ and $x_{j}$~\cite{Ide}.
 
-B.	Applying GGM to Darknet Traffic Data
+
+\subsection{Applying GGM to Darknet Traffic Data}
 In this section, we present how to apply the GGM to darknet traffic data.
-When data is applied to the GGM, the length of the observation period used for one-model learning is set to T.
-For example, when 10 minutes of observed darknet traffic data is used for one-model learning, T refers to 10 minutes.
-Data observed in an interval of T is called a ``time slot.'' Fig.
-1 shows an example of how a darknet traffic dataset is divided into time slots.
-Next, packet data from N number of source hosts are recorded from darknet traffic data in a time slot.
-At this time, the number of packets is counted for each source host, and the length of the time series is assumed to be M.
-The time series data of the number of packets per unit time (sampling interval) is then created.
-That is, in this case, M is the number of samples in a time slot, and the sampling interval is T/M.
-The number of packets at the time of [m | M?] of the i-th source host is represented by y_i^{(m)}.
-Furthermore, since the number of packets is a nonnegative value, we take a logarithm to the variable x_i^{(m)}=\log(y_i^{(m)}) in order to make it similar to the Gaussian distribution.
-However as an exception, if y_i^{(m)}=0, x_i^{(m)} is set to \log0.1.
-That is, a time slot is converted to the following matrix.
-D=[D_{im}]\in\mathbb{R}^{N \times M},\;\;D_{im} := x_i^{(m)}.
+When data is applied to the GGM, the length of the observation period used for one-model learning is set to $T$.
+For example, when 10 minutes of observed darknet traffic data is used for one-model learning, $T$ refers to 10 minutes.
+Data observed in an interval of $T$ is called a ``time slot.''
+Fig.~\ref{fig:timeslot} shows an example of how a darknet traffic dataset is divided into time slots.
 
-C.	Sparse Learning Using Graphical Lasso Algorithm
-In this section, we introduce how to estimate the sparse precision matrix by using the graphical lasso.
+Next, packet data from $N$ numbers of source hosts are recorded from darknet traffic data in a time slot.
+At this time, the number of packets is counted for each source host, and the length of the time series is assumed to be $M$.
+The time series data of the number of packets per unit time (sampling interval) is then created.
+That is, in this case, $M$ is the number of samples in a time slot, and the sampling interval is $T/M$.
+The number of packets at the time of $m$ of the $i$-th source host is represented by $y_i^{(m)}$ ($m \in \{1, 2, \cdots, M\}$).
+Furthermore, since the number of packets is a nonnegative value, we take a logarithm to the variable $x_i^{(m)}=\log(y_i^{(m)})$ in order to make it similar to the Gaussian distribution.
+However as an exception, if $y_i^{(m)}=0$, $x_i^{(m)}$ is set to $\log0.1$.
+That is, a time slot is converted to the following matrix.
+\begin{equation}
+\label{eq:d}
+D=[D_{im}]\in\mathbb{R}^{N \times M},
+\;\;D_{im} := x_i^{(m)}
+\end{equation}
+
+\begin{figure}[tb]
+	\includegraphics[width=8.0cm,clip]{./Materials/timeslot.eps}
+	\caption{Darknet traffic dataset divided into time slots. (e.g., $T=10min.$)}
+  	\label{fig:timeslot}
+\end{figure}
+
+\subsection{Sparse Learning Using Graphical Lasso Algorithm}
+In this section, we introduce how to estimate the sparse precision matrix by using the graphical lasso~\cite{Friedman}.
 A sparse matrix refers to a matrix with few nonzero elements, and in sparse structure learning, a weak cooperative relationship is not an essential cooperative relationship.
 It is expected that essential cooperative relationships can be extracted by scraping them.
-First, a sample covariance matrix S is obtained from input data (2), D.
-The sample covariance matrix S is substituted into the follow penalized maximize log-likelihood function with a \ell_1-regularization term based on the multivariate Gaussian distribution (1).
+
+First, a sample covariance matrix $S$ is obtained from input data~(\ref{eq:d}), $D$.
+The sample covariance matrix $S$ is substituted into the follow penalized maximize log-likelihood function with a $\ell_1$-regularization term based on the multivariate Gaussian distribution~(\ref{eq:mgd}).
+\begin{equation}
+\label{eq:max}
 {\rm arg}\mathop{\rm max}\limits_{\Sigma^{-1} \succ 0} \left({\ln\mathrm{det}(\Sigma^{-1})}-\mathrm{Tr}(S\Sigma^{-1})-r||\Sigma^{-1}||_{1}\right),
-where r is a positive real number.
-The graphical lasso is an algorithm for solving (3) at high speed and with a high accuracy by using the block coordinate descent method.
-The graphical lasso is implemented as an R language package, ``glasso.'' Input arguments of ``glasso'' are the sample covariance matrix S and the regularization coefficient r, and the output is the sparsely estimated precision matrix \hat{{\Sigma}^{-1}}.
-In the graphical lasso, by adjusting the value of the regularization coefficient r, it is possible to adjust how much the precision matrix is estimated to be sparse.
-As the value of r increases, the precision matrix is estimated to be more sparse.
+\end{equation}
+where $r$ is a positive real number.
+
+The graphical lasso is an algorithm for solving~(\ref{eq:max}) at high speed and with a high accuracy by using the block coordinate descent method~\cite{Banerjee}.
+The graphical lasso is implemented as an R language package, ``glasso.''
+Input arguments of ``glasso'' are the sample covariance matrix $S$ and the regularization coefficient $r$, and the output is the sparsely estimated precision matrix $\hat{{\Sigma}^{-1}}$.
+In the graphical lasso, by adjusting the value of the regularization coefficient $r$, it is possible to adjust how much the precision matrix is estimated to be sparse~\cite{Tibshirani}.
+As the value of $r$ increases, the precision matrix is estimated to be more sparse.
 From the above, it is possible to estimate a sparse precision matrix.
 
-D.	Usage of Graph Densities
-Ide et al.
-expressed cooperative relationships between source hosts as a graph by applying a GGM to traffic data.
-An undirected graph G = (V, E) has a node set V=\{x_{1}, \cdots, x_{N}\} and an edge set E=\{(i,j) \, | \, \Sigma^{-1}_{ij}\neq0\}.
+\subsection{Usage of Graph Densities}
+Ide {\it et al.} expressed cooperative relationships between source hosts as a graph by applying a GGM to traffic data~\cite{Ide}.
+An undirected graph $G = (V, E)$ has a node set $V=\{x_{1}, \cdots, x_{N}\}$ and an edge set $E=\{(i,j) \, | \, \Sigma^{-1}_{ij}\neq0\}$.
 Each node corresponds to a random variable, and the existence of an edge between nodes indicates a presence or absence of a cooperative relationship between nodes (variables).
 In addition, in the analysis of darknet data, if a variable for the number of packets from a source host is made to correspond to a node, an undirected graph of the precision matrix shows the cooperative relationships between the source hosts.
-Developing upon this idea, in our previous research, we proposed a novel criterion for judging abnormality by using graph density.
-Given G=(V,E), where the number of nodes in a graph is N(=|V|) and the number of edges is |E|, the graph density is defined as d=|E| \, / \, N(N-1).
+
+Developing upon this idea, in our earlier work~\cite{Han} proposed a criterion for judging anomalies by using graph density.
+Given $G=(V,E)$, where the number of nodes in a graph is $N(=|V|)$ and the number of edges is $|E|$, the graph density is defined as $d=|E| \, / \, N(N-1)$.
 The graph density is the ratio of the actual number of edges to the number of edges of the complete graph.
 If the graph density value is higher than those in the other time slots, it is considered that there are more cooperative relationships between source hosts than in the other time slots.
-In our previous research, a statistical criterion for determining an abnormally high graph density value was determined, and abnormalities were detected effectively.
-At that time, a criterion for selecting the optimum regularization coefficient r was proposed.
+In~\cite{Han}, a statistical criterion for determining an abnormally high graph density value was determined, and abnormalities were detected effectively.
+At that time, a criterion for selecting the optimum regularization coefficient $r$ was proposed.
 
-Ⅳ.
-Proposed Method
-The method of our earlier work is effective but restrictive because its process is a batch learning type, and [it may get alerts to be delayed for 3 days | its alerts may be delayed by 3 days | it may get alerts that are delayed by 3 days?] at maximum excluding the processing time.
+\section{Proposed Method}
+The method of our earlier work is effective but restrictive because its process is a batch learning type, and its alerts may be delayed by 3 days at maximum excluding the processing time.
 It cannot be used for real-time analysis.
 In this research, we extend our method to enable online processing and create an anomaly detection system to issue alerts in real-time.
-Fig.
-2 shows an overview of the proposed method.
-Our approach was divided into four stages: preprocessing, model selection, quantification, and online processing & alert judgment.
+Fig.~\ref{fig:overview} shows an overview of the proposed method.
+Our approach was divided into four stages: preprocessing, model selection, quantification, and online processing \& alert judgment.
 In this section, we introduce an alert judgment method and describe the online processing of anomaly-based detection with the method.
-Finally, we discuss an evaluation of processing time reduction.
 
-A.	Alert Judgment Method for Online Processing
+\begin{figure}[tb]
+\begin{center}
+	\includegraphics[width=8.5cm,clip]{./Materials/overview.pdf}
+	\caption{The overview of our proposed method.}
+  \label{fig:overview}
+\end{center}
+\end{figure}
+
+\subsection{Alert Judgment Method for Online Processing}
 We considered an anomaly detection-based method for discriminating alerts during online processing.
-We could quantitatively quantize cooperative relationships among hosts in one time slot as a graph density.
-We aimed to automatically identify time slots with abnormally high graph densities compared with the graph densities of other time slots by online processing.
-For this purpose, we prepared graph densities of past K time slots from the current time slot as an object of comparison for anomaly-based detection and considered a method of judging whether a current calculated graph density of a time slot is abnormal.
+We could quantify cooperative relationships among the source hosts in one time slot as a graph density.
+We automatically identify time slots with abnormally high graph densities compared with the graph densities of other time slots by online processing.
+For this purpose, we prepared graph densities of past $K$ time slots from the current time slot as an object of comparison for anomaly-based detection and considered a method of judging whether a current calculated graph density of a time slot is abnormal.
 The method is described as follows.
-Let \bm{d} = (d_{1}, d_{2}, \cdots, d_{K}) be a sequence in which graph densities of obtained time slots are arranged in descending order.
-Next, let \bm{d}_{(i)} = (d_{i}, d_{i+1},\cdots,d_{K}), where i is a natural number.
-Let \sigma^{2}_{(i)} be a variance of elements of \bm{d}_{(i)}.
-At this time, assume that the maximum i that satisfies \sigma^{2}_{(i+1)}/\sigma^{2}_{(i)}<\theta \, (0\leq \theta \leq 1) is i_{max} and set time slots corresponding to (d_{1},d_{2}, \cdots,d_{i_{max}}) as an alert.
-\theta is usually set to 0.95.
-Finally, we look for a destination port with the highest ratio of unique hosts among the time slots judged as alerts and examine the port protocol and the hosts that sent the packets to the destination port.
-Also, the sparsity of [an estimated precision matrix from | a precision matrix that was estimated by?] the graphical lasso differs depending on the value of regularization coefficient r.
-That is, graph density values change in accordance with the value of r.
-In the batch processing method, only one optimum value of r was selected on the basis of input data.
-However, we believed that it is important to issue an alert rather than deciding the optimal value of r for online processing this time.
-In this method, instead of selecting only one value of r, we calculate the graphical lasso by setting several values of r in advance and issue an alert when the condition[s?] of an alert [is | are?] satisfied for at least one value of r.
 
-B.	Algorithm for Online Processing
+Let $\bm{d} = (d_{1}, d_{2}, \cdots, d_{K})$ be a sequence in which graph densities of obtained time slots are arranged in descending order.
+Next, let $\bm{d}_{(i)} = (d_{i}, d_{i+1},\cdots,d_{K})$, where $i$ is a natural number.
+Let $\sigma^{2}_{(i)}$ be a variance of elements of $\bm{d}_{(i)}$.
+At this time, assume that the maximum $i$ that satisfies $\sigma^{2}_{(i+1)}/\sigma^{2}_{(i)}<\theta \, (0\leq \theta \leq 1)$ is $i_{max}$ and set time slots corresponding to $(d_{1},d_{2},\cdots,d_{i_{max}})$ as an alert.
+$\theta$ is usually set to $0.95$ by experience.
+Finally, we look for a destination port with the highest ratio of source hosts among the time slots judged as alerts and examine the port protocol and the hosts that sent the packets to the destination port.
+
+Also, the sparsity of a precision matrix that was estimated by the graphical lasso differs depending on the value of regularization coefficient $r$.
+That is, graph density values change in accordance with the value of $r$.
+In the batch processing method~\cite{Han}, only one optimum value of $r$ was selected on the basis of input data.
+However, we believe that it is important to issue an alert rather than deciding the optimal value of $r$ for online processing this time.
+In this method, instead of selecting only one value of $r$, we calculate the graphical lasso by setting several values of $r$ in advance and issue an alert when conditions of an alert are satisfied for at least one value of $r$.
+
+
+\subsection{Algorithm for Online Processing}
 In this section, we outline the procedure for online processing.
-Suppose that there is a sequence \mathcal{D}=\{D_1, D_2, \cdots, D_K\} of data matrices obtained from a time series of time slots and a set d_{\mathcal{D}}^{(r)}=\{d^{(r)}_{D_1}, d^{(r)}_{D_2}, \cdots, d^{(r)}_{D_K}\} of K graph densities calculated from \mathcal{D} in advance.
-d^{(r)}_{D_i} (i \in \{1, 2, \cdots, K\}) is the graph density for each predetermined regularization coefficient r in the data matrix D_i.
-It is assumed that the value of r is preset like r \in R ( =\{r_1, r_2, \cdots, r_s\} ).
-For example, preset R=\{0.2, 0.4, \cdots, 1.8\}.
-For online processing, the matrix of an updated time slot is given by D_t.
-The pseudocode for online processing is described in Algorithm 1.
-Note: Updating \mathcal{D} indicates that D_t is linked to \mathcal{D} and the oldest time slot in \mathcal{D} is deleted.
-Similarly, updating d_{\mathcal{D}}^{(r)} indicates that d_{D_t}^{(r)} is linked to d_{\mathcal{D}}^{(r)} and the oldest graph density in d_{\mathcal{D}}^{(r)} is deleted.
-When updating \mathcal{D} and d_{\mathcal{D}}^{(r)}, each size is kept at K.
+Suppose that there is a sequence $\mathcal{D}=\{D_1, D_2, \cdots, D_K\}$ of data matrices obtained from a time series of time slots and a set $d_{\mathcal{D}}^{(r)}=\{d^{(r)}_{D_1}, d^{(r)}_{D_2}, \cdots, d^{(r)}_{D_K}\}$ of $K$ graph densities calculated from $\mathcal{D}$ in advance.
+$d^{(r)}_{D_i} (i \in \{1, 2, \cdots, K\})$ is the graph density for each predetermined regularization coefficient $r$ in the data matrix $D_i$.
+It is assumed that the value of $r$ is preset like $r \in R ( =\{r_1, r_2, \cdots, r_s\} )$.
+For example, preset $R=\{0.2, 0.4, \cdots, 1.8\}$.
+For online processing, the matrix of an updated time slot is given by $D_t$.
+The pseudocode for online processing is described in Algorithm~\ref{alg1}.
+
+\begin{subfigures*}
+\begin{figure}
+\vspace{0.1cm}
+\end{figure}
+\begin{algorithm}[tb]
+\caption{Pseudocode for Online Processing}
+\label{alg1}
+\begin{algorithmic}[1]
+\REQUIRE $\mathcal{D}, \, D_t, \, d_{\mathcal{D}}^{(r)}, \, d_{{D}_{t}}^{(r)}$\\
+\ENSURE an alert (a destination port with the highest ratio of source hosts and IP addresses of the source hosts)
+\FOR{$t = K+1, K+2, K+3, \cdots$}
+	\STATE Update $\mathcal{D} \longrightarrow \mathcal{D}=(D_{t-K}, \cdots, D_{K}, D_{t})$
+	\FOR{$r$ in $R$}
+		\STATE Update $d_{\mathcal{D}}^{(r)} \longrightarrow d_{\mathcal{D}}^{(r)}=(d^{(r)}_{D_{t-K}}, \cdots, d^{(r)}_{D_K}, d^{(r)}_{D_t})$
+		\STATE Compute an alert
+		\vspace*{0.1cm}
+		\IF{$d_{D_t}^{(r)}$ is judged as an alert}
+			\vspace*{0.1cm}
+			\STATE Output an alert
+			\STATE Remove $d_{D_t}^{(r)}$ from $d_{\mathcal{D}}^{(r)}$
+		\ENDIF
+	\ENDFOR
+\ENDFOR
+\end{algorithmic}
+Note: Updating $\mathcal{D}$ indicates that $D_t$ is linked to $\mathcal{D}$ and the oldest time slot in $\mathcal{D}$ is deleted.
+Similarly, updating $d_{\mathcal{D}}^{(r)}$ indicates that $d_{D_t}^{(r)}$ is linked to $d_{\mathcal{D}}^{(r)}$ and the oldest graph density in $d_{\mathcal{D}}^{(r)}$ is deleted.
+\end{algorithm}
+\end{subfigures*}
+
+When updating $\mathcal{D}$ and $d_{\mathcal{D}}^{(r)}$, each size is kept at $K$.
 In this way, the number of time slots used for determining an alert is fixed like a sliding window.
 With this procedure, an alert can be determined sequentially from the updated data, and the computation cost is reduced because only the graphical lasso needs to be calculated for the updated data.
 
-C.	Processing Time
-Since December 2017, we have been trial operating our proposed method continuously with darknet sensors located in 7 different places operated by NICTER.
-Table Ⅰ gives details on the IP address scales of each darknet sensor we used this time.
-In this section, we evaluate the processing time of the prototype.
-The specifications of the computer used for the evaluation, which was done at the Cybersecurity Laboratory, NICT, included 16 GB of memory and an Intel Xeon E3-1230 v3 3.30 GHz CPU.
-To perform real-time processing with limited resources, it is necessary to finish the current processing before updating the next time slot.
-The largest computational complexity of the program is the graphical lasso algorithm O(N^3).
-N is the number of source hosts in the processing target time slot.
-Table Ⅱ shows the average and maximum value of the processing time and the number of source hosts when operated from December 2017 to March 2018.
-Parameter are set to T=10min.,\, M=6,\, K=432,\, \theta=0.95.
-As shown in Table Ⅱ, as the scale of the darknet sensor increases, N also increases, so we need to shorten the processing time.
-Since sensors F and G are actually large in scale, we decided to shorten the processing time by considering the following measures.
-･ Restrict the regularization coefficient, r.
-･ Ignore the third and fourth octets of IP addresses of source hosts.
-･ Select source hosts uniformly at random and limit the number of nodes, N.
-[Restring | Restricting?] r refers to reducing the number of its elements.
-Ignoring octets means that IP addresses on the same subnet are regarded as one host.
-Limiting the number of source hosts N indicates [when N exceeds the limit number | that N cannot exceed a certain limit?].
-Since characteristics of darknet traffic vary depending on its scale and the country in which the sensor is located, it is necessary to periodically adjust the above-mentioned parameters to be limited for each darknet.
-[Actually, in | In fact, in | As can be seen in?] Table Ⅱ, we set sensors A to E to r=\{0.2, 0.4, \cdots, 1.8\}, \, octet=4 and sensors F and G to r=\{0.6, 0.8, \cdots, 1.8\}, \, octet=2\sim3, \, limitation\_N = 1000.
-We regularly adjusted the parameters so that online processing would be on time.
-In addition, if the processing time of a time slot exceeded 900 seconds, the processing was forcibly terminated.
 
-Ⅴ.
-Case Studies
-A.	Preprocessing of Data
-In this study, we collected only TCP packets to which a SYN flag was attached.
-As a feature of black hole sensors on darknets, packets except for SYN such as SYN-ACK, ACK, and RST are often backscatters, and we ignored those packets since they are not our detection target.
-In addition, we pre-excluded packets arriving from known scanners that are for research and investigation purposes.
+
+
+\section{Performance Evaluation}
+We operated the prototype of the proposed method from December 2017 to March 2018.
+In this section, we introduce data preprocessing and show the evaluation of processing time.
+
+\subsection{Data Preprocessing}
+In this study, we collected only TCP packets with a SYN flag.
+As a feature of the darknet, packets except for SYN, (e.g. SYN-ACK, ACK, and RST) are often backscatters and noise, and we ignored those packets since they are not our detection target.
+In addition, we pre-excluded packets arriving from benign scanners that are for research and investigation purposes (e.g., Shodan, Censys, Shadowserver).
 When a large number of packets constantly arrive at a specific TCP port, or when packets are constantly arriving from many hosts, those TCP ports are excluded.
-In addition, we expected to get [an unknown vulnerable TCP port as an alert | an alert for an unknown vulnerable TCP port?] by excluding known fragile TCP ports [that we have frequently obtained as alerts | for which we have frequently obtained alerts?].
-We intentionally excluded those ports considering the possibility that other cooperative activities would be buried.
+Moreover, we expected to get an alert for an unknown vulnerable TCP port by excluding known vulnerable TCP ports for which we have frequently obtained as an alert.
+We intentionally excluded those ports considering the possibility that other cooperative relationships would be buried.
 Our goal is not only to detect known attacks but also to detect unknown attacks.
-The detection of unknown attacks increases when constantly targeted or known fragile ports are excluded in advance.
-In operation from December 2017 to March 2018, TCP ports 22, 23, 80, 443, 445, 1433, 2323, 3389, 5358, and 7547 were excluded from the preprocessing.
+The number of detection about unknown attacks increases when constantly targeted or known vulnerable ports are excluded in advance.
+In this pilot operation, TCP ports 22, 23, 80, 443, 445, 1433, 2323, 3389, 5358, and 7547 were excluded by the preprocessing.
 
-B.	Summary of Alert Results
-Table Ⅲ shows a monthly alert summary.
-We ignored alerts with a ratio of unique hosts numbering less than 10\% and a number of unique hosts less than 50.
-In addition, we divided priority into 10\% and 40\%.
-In the case of alerts obtained only about once or twice, this was often due to a temporary [host increase | increase in the number of hosts?], and, for many cases, it was difficult to investigate the cause.
-Table Ⅳ show an alert summary for each sensor.
-We did not get alerts for A and B with a small sensor scale.
-Sensors C, D, and E had important events, but temporary events were also acquired as alerts.
-For sensors F and G, alert port types were relatively small compared with other sensors, but they were often an important event.
-In the following, we introduce instances of actual new trending attacks that could be known from these alerts.
 
-1)	Detection Instances Related to ADB Miner (5555/TCP)
-We present detection instances of activities related to a mining botnet utilizing Android Debug Bridge (ADB).
-Fig.
-3 shows a chronological chart of the number of unique hosts observed across our all darknets per 1 day.
-On February 4, 2018, TCP port 5555 was seen to have a rapidly increasing number of unique hosts.
-We detected this in a timely manner.
-Details on the alerts obtained are given below.
+\subsection{Processing Time}
+In this section, we evaluate the processing time of the prototype.
+Table~\ref{tab:sensor} gives details on the IP addresses scales of each darknet sensor we used this time.
+The specifications of the computer used for the evaluation included 16 GB of memory and an Intel Xeon E3-1230 v3 3.30 GHz CPU.
+To perform real-time processing with limited resources, it is necessary to finish the current processing before updating the next time slot.
+The largest computational complexity of the program is the graphical lasso algorithm $O(N^3)$~\cite{Witten}.
+$N$ is the number of source hosts in the processing target time slot.
 
-The following items are related to 5555/TCP.
-ADB.Miner, a mining botnet utilizing ADB was spreading via 5555/TCP.
-It was seen in a large quantity from February 4, and about 16,000 hosts could be seen at the peak from NICTER's darknets.
-Since then, the attack[s?] [continued | has continued | have continued?] while maintaining its scale.
-According to a Netlab 360 report, they detected the attack[s?] at 15:00 on February 3 (GMT +8) with their system, and the earliest time that the infection could be traced back to was January 31.
-It infects when 5555/TCP (ADB debugging interface) is open, and its target is mainly Android devices.
-･ Worm infection: Infected devices will initiate a network scan on 5555/TCP and attempt to execute ADB commands [as a newly infected worm?].
-･ XMR Mining: After infection, it will dig XMR tokens.
-In addition, this worm borrows code from Mirai's SYN scanning module for efficiency.
-This is the first case of seeing Mirai's code on Android bots.
-In the case of Japan, there were many infections when using Android devices from overseas manufacturers and a specific mobile SIM card.
+Table~\ref{tab:processing} shows the average and maximum value of the processing time and the number of source hosts.
+Parameter are set to $T=10\,min.,\, M=6,\, K=432,\, \theta=0.95$.
+As shown in Table~\ref{tab:processing}, as the scale of the darknet sensor increases, $N$ also increases, so we need to shorten the processing time.
+Since sensors F and G are actually large in scale, we decided to shorten the processing time by considering the following measures.
+\begin{itemize}
+	\item Restrict the regularization coefficient, $r$.
+	\item Ignore the third and fourth octets of IP addresses of source hosts.
+	\item Select source hosts uniformly at random and limit the number of nodes, $N$.
+\end{itemize}
+Restricting $r$ refers to reducing the number of its elements.
+Ignoring octets means that IP addresses on the same subnet are regarded as one host.
+Limiting the number of source hosts $N$ indicates that $N$ cannot exceed a certain limit.
+Since characteristics of darknet traffic vary depending on its scale and the country in which the sensor is located, it is necessary to periodically adjust the above-mentioned parameters to be limited for each darknet.
+In fact, in Table~\ref{tab:processing}, we set sensors A to E to $r=\{0.2, 0.4, \cdots, 1.8\}, \, octet=4$ and sensors F and G to $r=\{0.6, 0.8, \cdots, 1.8\}, \, octet=2\sim3, \, limitation$\_$N = 1000$.
+We regularly adjusted the parameters so that online processing would be on time.
+In addition, if the processing time of a time slot exceeded 900 seconds, we forcibly terminated the process.
 
-2)	Detection Instances Related to Hajime Variants (8291, 2000/TCP)
-We introduce detection instances of activities related to Hajime botnet variants.
-Fig.
-4 shows a chronological chart of the number of unique hosts observed across all of our darknets per 1 day.
-On March 25, 2018, TCP port 8291 was seen to have a rapidly increasing number of unique hosts, and, also, on March 31, 2018, TCP port 2000 was seen to have a rapidly increase in the same way.
-We detected these in a timely manner.
-Details on the alerts related to TCP ports 8291 and 2000 are given below.
-The scanning events of TCP ports 8291 and 2000 were caused by a Hajime botnet variant targeting the vulnerabilities of router products manufacturer ``X.'' 8291/TCP increased sharply from March 25, but attacks with the same behaviors moved from March 31 to 2000/TCP.
-As a feature of Hajime, C&C communication using BitTorrent's P2P protocol is performed and supports only ARM and MIPS architectures.
-Also, the source code is not published, and there are few variants.
-If TCP ports 8291 or 2000 are open, [it | the botnet variant?] tries to infect by accessing common web ports 80, 81, 82, 8080, 8081, 8082, 8089, 8181, and 8880.
-It exploits known vulnerabilities of the operating systems of routers [ChimayRed HTTP exploit, SMB buffer-overflow vulnerability (CVE-2018-7445)] as well as password brute-forcing.
 
-Ⅵ.
-Conclusion
-We proposed a method for detecting coordinated malignant activities from darknets in real-time by using the graphical lasso and an alert judgment method that uses graph density.
-The methods were put to practical use with real darknet traffic.
-The processing time was shortened, and parameter tunings were evaluated.
-We were able to show alert summaries and introduce instances of attacks related to ADB Miner and Hajime variants.
-Since almost all packets reaching darknets originate from malicious activities, there is no correct or incorrect answer for attacks.
+\begin{table}[tb]
+  \begin{center}
+    \caption{Details of IP Addresses Scales of Each Darknet Sensors}
+    \begin{tabular}{|l|ccccccc|} \hline
+      Sensor & A & B & C & D & E & F & G \\ \hline
+      Scales & 5 & 12 & 123 & 125 & 253 & 4,096 & 29,184 \\ \hline
+    \end{tabular}
+    \label{tab:sensor}
+  \end{center}
+\end{table}
+
+\begin{table}[tb]
+\caption{Monthly Average and Maximum Value of Processing Time and the Number of Source Hosts for Each Sensor}
+\label{tab:processing}
+\begin{tabular}{|c|cccc|}
+\hline
+\multirow{2}{*}{\rotatebox{90}{Sensor}} & \multicolumn{4}{c|}{\begin{tabular}[c]{@{}c@{}}Processing Time {[}AVG, MAX{]} (sec)\\ / The Number of Source Hosts {[}AVG, MAX{]}\end{tabular}} \\ \cline{2-5}
+                   & Dec 2017                       & Jan 2018                       & Feb 2018                      & Mar 2018                      \\ \hline\hline
+\multirow{2}{*}{A} & {[}11.8, 37.7{]}               & {[}13.4, 20.9{]}               & {[}13.1, 20.2{]}              & {[}13.1, 21.2{]}              \\
+                   & /{[}9.4, 29{]}                 & /{[}10.0, 26{]}                & /{[}11.3, 42{]}               & /{[}12.3, 38{]}               \\ \hline
+\multirow{2}{*}{B} & {[}10.8, 18.74{]}              & {[}12.4, 20.6{]}               & {[}12.5, 20.9{]}              & {[}12.5, 20.5{]}              \\
+                   & /{[}4.1, 29{]}                 & /{[}5.0, 19{]}                 & /{[}5.9, 24{]}                & /{[}6.3, 29{]}                \\ \hline
+\multirow{2}{*}{C} & {[}15.8, 765.4{]}              & {[}13.7, 430.7{]}              & {[}14.9, 686.1{]}             & {[}19.0, 761.6{]}             \\
+                   & /{[}82.5, 252{]}               & /{[}87.7, 243{]}               & /{[}108.2, 594{]}             & /{[}131.3, 600{]}             \\ \hline
+\multirow{2}{*}{D} & {[}12.7, 224.2{]}              & {[}14.3, 268.4{]}              & {[}15.6, 625.5{]}             & {[}18.9, 854.9{]}             \\
+                   & /{[}77.4, 238{]}               & /{[}84.0, 220{]}               & /{[}105.5, 581{]}             & /{[}125.5, 600{]}             \\ \hline
+\multirow{2}{*}{E} & {[}16.9, 481.1{]}              & {[}16.9, 569.3{]}              & {[}20.3, 765.1{]}             & {[}42.5, 896.6{]}             \\
+                   & /{[}134.4, 421{]}              & /{[}143.6, 463{]}              & /{[}177.5, 600{]}             & /{[}204.9, 600{]}             \\ \hline
+\multirow{2}{*}{F} & {[}515.8, 894.2{]}             & {[}474.4, 894.4{]}             & {[}478.8, 894.6{]}            & {[}488.9, 896.9{]}            \\
+                   & /{[}657.7, 1000{]}             & /{[}931.6, 1000{]}             & /{[}983.2, 1000{]}            & /{[}988.1, 1000{]}            \\ \hline
+\multirow{2}{*}{G} & {[}532.2, 834.2{]}             & {[}507.8, 833.6{]}             & {[}465.8, 889.9{]}            & {[}443.3, 873.0{]}            \\
+                   & /{[}896.1, 1000{]}             & /{[}999.9, 1000{]}             & /{[}1000, 1000{]}             & /{[}1000, 1000{]}             \\ \hline
+\end{tabular}
+\end{table}
+
+
+
+
+\section{Case Studies}
+In this section, we describe a summary of alert results from December 2017 to March 2018 and introduce 3 concrete detection instances.
+All the time shown in this paper is Japanese Standard Time (JST).
+
+\begin{table*}[tb]
+  \caption{Summary of Monthly Alert [TCP Port Under Attacks (Number of Times It Got Alerted, Date Got for First Time as An Alert)]}
+  \label{tab:summary}
+  \begin{tabular}{|l|lll|lll|}
+  \hline
+                                                     & \multicolumn{6}{c|}{Detected TCP ports (The Number of Alerts, First Detected Date)}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          \\ \cline{2-7}
+  Date                                               & \multicolumn{3}{c|}{Ratio of Source Hosts \textgreater{}= 40\%}                                                                                                                                                                                                                                                                                                                                                  & \multicolumn{3}{c|}{Ratio of Source Hosts \textgreater =10\%}                                                                                                                                                                                                                                                                                                                                    \\ \hline\hline
+  \begin{tabular}[c]{@{}l@{}}Dec\\ 2017\end{tabular} & \begin{tabular}[c]{@{}l@{}}~~~~81(125, 19:00 1st)\\ ~8080(90, 22:40 1st)\\ ~~~~82(15, 22:40 1st)\\ ~5060(1, 08:00 3rd)\end{tabular}                        & \begin{tabular}[c]{@{}l@{}}~1900(1, 15:10 3rd)\\ ~~~~26(1, 03:00 4th)\\ ~9100(1, 20:10 18th)\end{tabular}                             & \begin{tabular}[c]{@{}l@{}}7777(1, 11:10 24th)\\ 9010(1, 19:00 26th)\\ 8181(2, 13:10 27th)\end{tabular}                     & \begin{tabular}[c]{@{}l@{}}~9006(1, 05:00 2nd)\\ ~~~~25(1, 18:10 3rd)\\ ~8443(3, 15:30 10th)\\ ~1017(1, 05:30 15th)\end{tabular}     & \begin{tabular}[c]{@{}l@{}}~~~465(1, 15:20 15th)\\ 41017(1, 18:50 17th)\\ ~2222(2, 22:40 20th)\\ ~8001(1, 22:50 22nd)\end{tabular}  & \begin{tabular}[c]{@{}l@{}}27001(1, 19:30 23rd)\\ ~7002(1, 04:20 25th)\\ ~7004(1, 14:20 25th)\\ 50090(1, 06:30 26th)\end{tabular} \\ \hline
+  \begin{tabular}[c]{@{}l@{}}Jan\\ 2018\end{tabular} & \begin{tabular}[c]{@{}l@{}}~9997(1, 16:30 2nd)\\ 10250(1, 02:00 4th)\\ 60043(1, 15:10 5th)\\ ~3052(1, 02:30 6th)\\ ~8118(1, 21:40 6th)\end{tabular} & \begin{tabular}[c]{@{}l@{}}~3306(17, 08:40 10th)\\ ~4567(2, 14:10 14th)\\ 27016(2, 21:50 16th)\\ 27019(2, 01:10 17th)\end{tabular} & \begin{tabular}[c]{@{}l@{}}9200(1, 14:30 18th)\\ 8000(2, 22:00 20th)\\ 8086(1, 12:40 23rd)\\ ~~~24(1, 07:30 25th)\end{tabular} & \begin{tabular}[c]{@{}l@{}}~9000(4, 15:10 8th)\\ 10001(1, 23:00 8th)\\ 27017(1, 17:20 10th)\\ ~2480(1, 19:10 16th)\end{tabular} & \begin{tabular}[c]{@{}l@{}}20202(1, 20:10 18th)\\ ~8007(1, 21:10 19th)\\ ~8081(1, 23:40 21st)\\ ~8082(1, 02:50 22nd)\end{tabular} & \begin{tabular}[c]{@{}l@{}}~1521(1, 12:30 23rd)\\ ~~789(1, 16:50 26th)\\ ~1911(1, 17:10 27th)\\ ~9999(1, 22:00 30th)\end{tabular}    \\ \hline
+  \begin{tabular}[c]{@{}l@{}}Feb\\ 2018\end{tabular} & ~5431(53, 09:50 8th)                                                                                                                              & ~~135(1, 13:30 26th)                                                                                                              &                                                                                                                             & ~~873(1, 06:10 4th)                                                                                                             & ~5555(61, 06:10 4th)                                                                                                            & 52869(2, 02:30 8th)                                                                                                             \\ \hline
+  \begin{tabular}[c]{@{}l@{}}Mar\\ 2018\end{tabular} & ~8291(228, 01:00 25th)                                                                                                                            & ~2000(5, 09:40 31st)                                                                                                             &                                                                                                                             & ~2433(1, 18:10 9th)                                                                                                            &                                                                                                                                &                                                                                                                                 \\ \hline
+  \end{tabular}
+\end{table*}
+
+
+
+
+\begin{table}[tb]
+  \caption{Summary of Alert for Each Sensor}
+  \label{tab:summarysensor}
+  \begin{tabular}{|c|l|rrrrr|}
+  \hline
+  \multicolumn{2}{|c|}{\begin{tabular}[c]{@{}c@{}}Sensor/\\ Sum of\\ Alerts\end{tabular}} & \multicolumn{5}{c|}{TCP Port (The Number of Alerts)}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   \\ \hline\hline
+  \multicolumn{2}{|c|}{A/0}                                                               & \multicolumn{5}{c|}{None}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      \\ \hline
+  \multicolumn{2}{|c|}{B/0}                                                               & \multicolumn{5}{c|}{None}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      \\ \hline
+  \multicolumn{2}{|c|}{C/70}                                                              & \begin{tabular}[c]{@{}r@{}}8080(36)\\ 81(11)\\ 82(6)\end{tabular}                                                    & \begin{tabular}[c]{@{}r@{}}3306(5)\\ 2000(3)\\ 8291(2)\end{tabular}                                        & \begin{tabular}[c]{@{}r@{}}5431(2)\\ 8118(1)\end{tabular}                                                   & \begin{tabular}[c]{@{}r@{}}7777(1)\\ 4567(1)\end{tabular}                                                     & \begin{tabular}[c]{@{}r@{}}27019(1)\\ 10250(1)\end{tabular}                                                  \\ \hline
+  \multicolumn{2}{|c|}{D/52}                                                              & \begin{tabular}[c]{@{}r@{}}81(10)\\ 8080(10)\\ 3306(9)\\ 82(5)\end{tabular}                                          & \begin{tabular}[c]{@{}r@{}}8443(2)\\ 8291(2)\\ 2000(2)\\ 9999(1)\end{tabular}                              & \begin{tabular}[c]{@{}r@{}}9100(1)\\ 9010(1)\\ 8000(1)\\ 60043(1)\end{tabular}                              & \begin{tabular}[c]{@{}r@{}}5431(1)\\ 5060(1)\\ 465(1)\\ 4567(1)\end{tabular}                                  & \begin{tabular}[c]{@{}r@{}}3052(1)\\ 26(1)\\ 24(1)\end{tabular}                                              \\ \hline
+  \multicolumn{2}{|c|}{E/77}                                                              & \begin{tabular}[c]{@{}r@{}}8080(21)\\ 81(15)\\ 82(4)\\ 3306(3)\\ 8291(2)\\ 27016(2)\\ 9997(1)\\ 9200(1)\end{tabular} & \begin{tabular}[c]{@{}r@{}}9006(1)\\ 873(1)\\ 8443(1)\\ 8181(1)\\ 8086(1)\\ 8082(1)\\ 8081(1)\end{tabular} & \begin{tabular}[c]{@{}r@{}}8007(1)\\ 8001(1)\\ 8000(1)\\ 789(1)\\ 7004(1)\\ 7002(1)\\ 50090(1)\end{tabular} & \begin{tabular}[c]{@{}r@{}}41017(1)\\ 27019(1)\\ 27017(1)\\ 27001(1)\\ 25(1)\\ 2480(1)\\ 2433(1)\end{tabular} & \begin{tabular}[c]{@{}r@{}}20202(1)\\ 1911(1)\\ 1900(1)\\ 1521(1)\\ 135(1)\\ 1017(1)\\ 10001(1)\end{tabular} \\ \hline
+  \multicolumn{2}{|c|}{F/420}                                                             & \begin{tabular}[c]{@{}r@{}}8291(219)\\ 81(71)\end{tabular}                                                           & \begin{tabular}[c]{@{}r@{}}5555(55)\\ 5431(48)\end{tabular}                                                & \begin{tabular}[c]{@{}r@{}}8080(23)\\ 2222(2)\end{tabular}                                                  & 8181(1)                                                                                                       & 52869(1)                                                                                                     \\ \hline
+  \multicolumn{2}{|c|}{G/34}                                                              & \begin{tabular}[c]{@{}r@{}}81(18)\\ 5555(6)\end{tabular}                                                             & 9000(4)                                                                                                    & 8291(3)                                                                                                     & 5431(2)                                                                                                       & 52869(1)                                                                                                     \\ \hline
+  \end{tabular}
+\end{table}
+
+\subsection{Summary of Alert Results}
+Table~\ref{tab:summary} shows the summary of monthly alerts.
+We ignored alerts with a ratio of source hosts numbering less than 10\% and the number of source hosts less than 50.
+In the case of alerts obtained only about once or twice, this was often due to a temporary increase of the number of source hosts, and, for many cases, it was difficult to investigate its cause.
+Table~\ref{tab:summarysensor} shows the summary of alerts for each sensor.
+We did not get alerts from sensors A and B which are a small scale sensor.
+Sensors C, D, and E had important events, but lots of temporary events were also acquired as alerts.
+For sensors F and G, alert port types were relatively small compared with other sensors, but many of them were important events.
+
+\subsection{Detection Instances}
+In the following, we introduce instances of actual new trending attacks related to a mining botnet (5555/TCP), a spam botnet (5431/TCP) and a Hajime botnet variant (8291, 2000/TCP) that were detected by the proposed method.
+Fig.~\ref{fig:chart_5555}, ~\ref{fig:chart_5431}, and ~\ref{fig:chart_8291_2000} show chronological charts of the number of source hosts observed in all of our darknet sensors per hour.
+Red lines indicate the date when the proposed method detected the scanning event for the first time.
+
+\begin{itemize}
+  \item As shown in Fig.~\ref{fig:chart_5555}, the number of source hosts which sent packets to TCP port 5555 shows a rapidly increasing on February 4.
+  According to the first published report on the field of cybersecurity regarding this event~\cite{Netlab1}, they detected this mining botnet on February 3, 16:00 with their system.
+  We automatically detected this mining botnet on February 4, 06:10.
+
+  \item Fig.~\ref{fig:chart_5431} shows that more than 100,000 source hosts have been observed in once every 2 to 4 days after February 8.
+  According to the first published report on the field of cybersecurity regarding this event~\cite{Netlab2}, they detected this spam botnet in September 2018.
+  We automatically detected this spam botnet on February 8, 09:50.
+
+  \item As can be seen from Fig.~\ref{fig:chart_8291_2000}, the number of source hosts which sent packets to TCP port 8291 shows a rapidly increasing on March 25, and attacks with the same behaviors moved to 2000/TCP after March 31.
+  According to the first published report on the field of cybersecurity regarding this event~\cite{Radware}, they detected this Hajime botnet variant on March 25, 00:00.
+  We automatically detected this Hajime botnet variant on March 25, 01:00 (8291/TCP) and March 31, 09:40 (2000/TCP).
+\end{itemize}
+Details of these scanning events are given below.
+\subsubsection{Mining Botnet (5555/TCP)}
+A scanning event of TCP port 5555 is related to a mining botnet utilizing Android Debug Bridge (ADB).
+The report~\cite{Netlab1} says that this botnet infects when 5555/TCP (ADB debugging interface) is open, and infected devices initiate a network scan on 5555/TCP.
+After infection, it will dig Monero XMR (cryptocurrency) tokens.
+
+\subsubsection{Spam Botnet (5431/TCP)}
+A scanning event of TCP port 5431 is related to an email spammers botnet.
+The report~\cite{Netlab2} says that the target of infection primarily attacks the routers that have the BroadCom Universal Plug and Play function enabled, and the proxy network is implemented by the attacker to send spams.
+
+\subsubsection{Hajime Botnet Variant (8291, 2000/TCP)}
+Scanning events of TCP ports 8291 and 2000 is related to a Hajime botnet variant targeting the vulnerabilities of Mikrotik routers.
+It exploits known vulnerabilities of the operating systems of routers.
+
+As can be seen in the above cases, the proposed method is capable of automatically detecting coordinated activities almost as early as major security articles or blogs provide reports.
+In some cases, it can detect such activities earlier than them.
+Moreover, it can detect minor activities that have not yet received large attention from major security articles or blogs.
+Therefore we conclude that the proposed method is effective for automatically detecting coordinated malicious scanning activities and will contribute streamlining security operations of each organization.
+
+\begin{figure}[tb]
+\begin{center}
+	\includegraphics[width=8.5cm,clip]{./Materials/5555.png}
+  \vspace*{-0.5cm}
+	\caption{Chronological chart of the total number of source hosts observed in all of our darknet sensors per hour (5555/TCP)}
+  \label{fig:chart_5555}
+
+  \vspace*{0.3cm}
+  \includegraphics[width=8.5cm,clip]{./Materials/5431.png}
+  \vspace*{-0.5cm}
+  \caption{Chronological chart of the total number of source hosts observed in all of our darknet sensors per hour (5431/TCP)}
+  \label{fig:chart_5431}
+
+  \vspace*{0.3cm}
+  \includegraphics[width=8.5cm,clip]{./Materials/8291_2000.png}
+  \vspace*{-0.5cm}
+  \caption{Chronological chart of the total number of source hosts observed in all of our darknet sensors per hour (8291, 2000/TCP)}
+  \label{fig:chart_8291_2000}
+\end{center}
+\end{figure}
+
+
+
+\section{Conclusion}
+We proposed a method for estimating cooperative relationships among the source hosts from darknet traffic by using the graphical lasso and detecting coordinated malicious scanning activities in real-time using an alert judgment method that uses graph densities.
+The methods were put to practical uses with real darknet traffic.
+The processing time was shortened for process our program in real-time.
+We were able to show the summary of alerts and introduce instances of attacks related to a mining botnet, a spam botnet, and a Hajime botnet variant.
+
+Since almost all packets reaching a darknet originate from malicious activities, there is no correct or incorrect answer for attacks.
 Moreover, we do not know the cause of most of them.
-In other words, even if we catch cooperative relationships from darknet traffic by using this method, we cannot evaluate accuracy unless we know the cause.
-As future work, we would like to quantitatively evaluate accuracy.
-An alert for which the cause is known would be judged as a correct answer, and those for which the cause is unknown would be judged as a false-positive.
-A global attack that could not be detected with this method would be judged to be false-negative.
-We will determine the optimal parameters automatically for each darknet to obtain alerts regardless of the scale in our next step.
-In addition, [filtering ports in preprocessing were | the filtering of ports was?] done manually until now, but automatic preprocessing is also part of our future work.
+Or, since causes sometimes become clear later, it is difficult to evaluate a real-time accuracy with real darknet traffic.
+As future works, we would like to consider a method to quantitatively evaluate an accuracy, such as analyzing past darknet data where causes of most traffic are clarified.
+Also, we will determine the optimal parameters automatically for each darknet to obtain alerts regardless of the scale in our next step.
+In addition, in the step of preprocessing, the filtering of ports was done manually until now, but automatic filtering is also part of our future works.
+
