@@ -1,0 +1,777 @@
+\documentclass{sig-alternate-10pt}
+\usepackage[dvipdfmx]{xcolor}
+\usepackage{epsfig,endnotes}
+\usepackage{amssymb,amsmath,amssymb,bm,txfonts}
+\usepackage{enumerate,fancybox,url,ascmac,here,comment,wrapfig}
+\usepackage{algorithm}
+\usepackage{algorithmic}
+\usepackage{authblk}
+\begin{document}
+
+\title{Real-time Detection of Malicious Cooperative Behaviors\\by the Graphical Lasso from Darknet Traffic}
+
+%for single author (just remove % characters)
+\author[1, 2]{\large Chansu Han}
+\author[3]{\large Jumpei Shimamura}
+\author[2]{\large Takeshi Takahashi}
+\author[2]{\large Daisuke Inoue}
+\author[1]{\large Masanori Kawakita}
+\author[1, 2]{\large \\Jun'ichi Takeuchi}
+\author[2]{\large Koji Nakao}
+
+\affil[1]{Kyushu University}
+\affil[2]{National Institute of Information and Communications Technology}
+\affil[3]{Clwit Inc.}
+
+
+\maketitle
+
+\begin{abstract}
+Increasing amount of malware incurs severe security incidents, and it makes cyberspace insecure in present days.
+Malware needs to be detected.
+It is known that malware often presents synchronized behavior, because C\&C server may instruct a specific action to the bot computers simultaneously.
+Our earlier work monitors traffic arriving at our darknet space and detects synchronized activities of the traffic sources by using {\it graphical lasso}, a well-known sparse learning algorithm.
+The model was effective but was unable to cope with real-time analysis because it relies on batch learning.
+In this study, our earlier work is extended so as to capture anomalously cooperative behaviors in real-time.
+At the same time, a program calculation time is shortened, and parameters are tuned to improve an accuracy of security alerting.
+To demonstrate the feasibility of the proposed method, our prototype is implemented and several security incidents are detected with it using real traffic data.
+Performance evaluation is also conducted in terms of calculation time and accuracy of security alerting to demonstrate the effectiveness and efficiency of the proposed method.
+\end{abstract}
+
+\keywords{Botnet, Mawlare, Darknet, Real-time Detection}
+
+
+\section{Introduction}
+Since 2003, botnets have become a big threat to the cybersecurity on the Internet~\cite{McCarty}.
+Even the threat continues to change and develop recently and various variants and unknown attacks are increasing.
+Botnets are networks made up of remote-controlled computers called ``bots'' by a human operator called ``botmaster'' using command \& control servers.
+Akiyama {\it et al.} defined three metrics for detecting botnets through analyzing their behaviors: relationship, response, and synchronization~\cite{Akiyama}.
+Among these three metrics, we focused on cooperative activities of malware which simultaneously behave with multiple hosts (devices) synchronously.
+The national institute of information and communications technology (NICT) in Japan holds darknet traffic with an observation scale of 300,000 IP addresses by international collaboration~\cite{NICTERWEB} and we used parts of these datasets as data sources on our work.
+The darknet refers to a set of accessible but unused subspaces of the Internet.
+It is said that almost packets reaching darknets are originated from malicious activities.
+We assumed that if a host-to-host cooperative behavior is observed from darknet traffic, that host group is infected with malware.
+Among malware performing cooperative actions, botnets are mainly the detection target, and hosts that collaborate with infected with the same malware such as a worm and malicious scan activities are also subject to detection.
+In general, botnets communicate with each other using HTTP, IRC, P2P, Generic protocols.
+However, our method does not require communication between bots, we can detect a botnet regardless of which protocol it used and what structure it had.
+It is effective even though botmasters change their C\&C communication protocol and structure.
+Furthermore, since our method is to capture the synchronous behaviors between hosts without supervisors and labeled data, irrespective of whether malware is unknown or known, even unknown attacks can be effectively detected if cooperative action can be captured.
+
+
+\vspace*{0.3 cm}
+\noindent
+\textbf{Approach.}\space\space
+Most of the packets reaching a darknet are abnormal, but the volume of traffic is so numerous that there is a limit to operating everything.
+For the purpose of extracting only important and big events among them, as mentioned above, we focused on the property that the botnet has synchronization between hosts.
+In our previous work, we proposed a method based on a sparse modeling by $\ell_1$-regularization using darknet traffic~\cite{Hamasaki}.
+It can be expected to estimate the presence or absence of cooperative relationships between source hosts by this model estimation.
+For model estimation, we used the graphical lasso, which is a well-known sparse structure learning algorithm for the graphical Gaussian model~\cite{Friedman}.
+We represented estimated cooperative relationships between hosts as an undirected graph~\cite{Mukai2} and proposed an anomaly-based detection method to detect periods that abnormally many synchronized hosts using graph density~\cite{Han}.
+Alerts include transmission time, port numbers and host IP addresses.
+Finally, we investigated information such as headers and payloads of packets and examine the type of attacks manually.
+
+
+\vspace*{0.3 cm}
+\noindent
+\textbf{Contribution.}\space\space
+This paper offers the following contributions:
+\begin{enumerate}
+	\item The previous work~\cite{Han} was effective but restrictive because its process was a batch learning type, which means that it cannot be used for a real-time analysis.
+Therefore we proposed a new algorithm and alert judgment method for an online processing.
+
+	\item We implemented the proposed method in the R language.
+The implemented analysis engine is running continuously at the NICT.
+
+	\item We performed parameter tunings.
+Through this process, we optimized a detection accuracy and a computation time.
+
+	\item We show instances that seem to be interesting among alerts obtained in continuous operation from September 2017. These are detection instances of activities related to malware Mirai variants that exploit a vulnerability of router products to spread infection.
+\end{enumerate}
+
+\vspace*{0.3 cm}
+\noindent
+\textbf{Roadmap.}\space\space
+We first provide readers with backgrounds on darknets in Section 2.
+Next, in section 3, we introduce related works from three perspectives: related surveys, studies using darknets, studies via cooperative behaviors.
+In Section 4, we present previous studies in order of outline of the graphical Gaussian model, how to apply the graphical Gaussian model to darknet traffic data, an introduction of a sparse structure learning using the graphical lasso algorithm, a presentation of criteria for determining botnets, and an usage of graph densities.
+In Section 5, we propose a new method for an alert judgment, and an online processing algorithm.
+An implementation of a prototype, a consideration of a calculation time, and evaluations of parameter tunings are also provided in this section.
+In Section 6, we show evaluations of an online processing using past darknet traffic data and detected instances by a continuous operation.
+Finally, we conclude in Section 7.
+
+\section{Darknet}
+In this section, we introduce the necessary background on the darknet and details about collected datasets.
+As illustrated in Figure~\ref{fig:darknet}, the darknet refers to a set of accessible but unused subspaces of the Internet.
+These subspaces are ``unused” as they are not connected to any devices.
+In theory, any packets should NOT arrive at darknets because they are not connected to any devices.
+However, in fact, quite few packets DO arrive.
+It is said that almost packets reaching darknets are caused by malicious activities.
+Types of packets arriving at darknets are scans and attacks by malware, backscatter (a reflection of DDoS attack), results of miss-configurations, etc.
+Darknet traffic reflects global trends in malicious activities on the Internet (particularly the status of worm-type malware infections)~\cite{CyberLab}.
+In other words, by analyzing darknet traffic, it is possible to capture trends of cyber attacks and malware infections in real-time.
+Accordingly, darknets are very useful to observe the behavior of serious attacks over the Internet.
+
+
+\begin{figure}[tb]
+\begin{center}
+	\includegraphics[width=8.0cm,clip]{./Materials/darknet.eps}
+	\caption{An outline of draknet}
+  	\label{fig:darknet}
+\end{center}
+\end{figure}
+
+
+Next, in the present work, we have used darknet traffic which operated by the NICT for continuous operation.
+We aim for our results (alerts) to be adopted in the nicter (Network Incident Analysis Center for Tactical Emergency Response)~\cite{NICTERWEB, Nakao}.
+The purpose of the nicter is that it enables the early detection of such incidents, which are detrimental to networks, and determines the quickest and most effective countermeasures.
+Darknets observed by the nicter spread in various countries through international collaboration and the scale of observation is about 300,000 IP addresses.
+IP address scales of darknets used this time, the smallest darknet sensor is 5, the biggest darknet sensor is about 30,000.
+We conducted a trial operation from the proposed method from about 35,000 IP addresses as a whole.
+We have collected TCP packets that the SYN flag is attached and have used the following information of a darknet packet data: a transmission time, a source IP address, a destination IP address, and a destination port number.
+
+
+\section{Related Works}
+First, we looked up surveys of related research on botnet detection.
+In~\cite{Garcia} classified characteristics of network-based botnet detection technology in three way: detection algorithms, detection techniques, detection sources.
+When applying our method to this classification, we used the graphical lasso which is unsupervised algorithm and heuristic rules for the detection algorithm.  
+Detection technology is an anomaly-based detection technology featuring the behavior of bots, and the detection source is darknet traffic.
+According to the paper~\cite{Garcia}, all the papers have used heuristic-based rules at some point of the analysis.
+
+In~\cite{Feily}, botnet detection technologies were compared at five points: an ability to detect unknown bots, a capability of botnet detection regardless of botnet protocol and structure, and botnets with encrypted C\&C channels, a real-time detection, and an accuracy.
+When comparing our method with these five points, it can detect unknown bots and it does not depend on botnet protocol and structure as mentioned in the Introduction.
+Also, it does not require access to C\&C payload for detection, so it does not matter botnets with encrypted C\&C channels, and a real-time detection is the main contribution of this paper.
+Finally, an evaluating of the accuracy is a difficult point.
+Because most darknet traffic do not have payload data, attack codes cannot be collected and it is difficult to labeling.
+Although we raise the accuracy of alerts by a heuristic method based on empirical experiments, but we can not express the accuracy quantitatively at this time.
+Therefore, an evaluation of the accuracy remains as a future work.
+
+Next, we investigated studies using darknets as a data source.
+A lot of works using darknets are ongoing to research countermeasures against malicious activities.
+It can be classified into two categories.
+The first category is based on managing and designing darknet platforms, and the other category is darknet analysis.
+Bailey {\it et al.} introduced the Internet Motion Sensor (IMS), the goal of the IMS is to measure, characterize and track threats~\cite{Bailey, Bailey2}.
+Choi {\it et al.} proposed a security monitoring and response model to analyze cyber threats trend and to trace potential attackers~\cite{Choi}.
+Also, the nicter is one of study about darknet platforms~\cite{Nakao}.
+In the other category, darknet analysis, Ali {\it et al.} classified DDoS attacks by using Resource Allocating Network with Locality Sensitive Hashing (RAN-LSH) in which data to be trained are selected by using LSH and fast online learning is actualized by training only selected data~\cite{Ali}.
+Ban {\it et al.} proposed an abrupt-change detection algorithm that can detect botnet-probe campaigns with a high detection rate because botnet activities can be observed high temporal coincidence in darknets~\cite{Ban}.
+However, since 3 way handshaking is not performed on darknet traffic and there is almost no payload data, most of the botnet detection techniques targeted for real network traffic can not usually be applied in darknet.
+
+Furthermore, many techniques have been studied for detecting botnet via cooperative behaviors.
+Botsniffer proposed statistical algorithms to detect botnets in a centralized topology based on behaviors of their multiple crowd-like behaviors~\cite{Gu}.
+Botminner proposed a detection framework that extends botsniffer, performs clustering with monitored C\&C communication and malicious activities respectively, and then issues final detection results by cross-correlation between them~\cite{Gu2}.
+Strayer {\it et al.} proposed a temporal correlation algorithm on packet inter-arrival time and packet size in a five-dimensional space~\cite{Strayer}.
+Garc\'{i}a {\it et al.} applied the EM clustering algorithm to detect synchronization in bots and botnets behavior~\cite{Garcia2}. This synchronization was studied as the relationship of IP addresses, ports and time frames only.
+
+As with our method, there is research which characterizes synchronism from darknet traffic.
+Yamauchi {\it et al.} proposed a method for botnet detection from darknet traffic by the Non-negative Matrix Factorization (NMF), which can decompose the vector valued time series data into several components~\cite{Yamauchi}.
+Compared with Yamauchi {\it et al.}, Our method has high computational cost, but our approach is applicable even when the data size is small with small scale of observation of the darknet.
+
+
+\section{Previous Studies}
+In the method of Hamasaki {\it et al.}~\cite{Hamasaki}, malware activities (botnets) were detected by capturing change points in cooperative relationships between source hosts of darknet traffic data from the property such as cooperativeness (synchronization) in botnet host groups.
+An abnormal detection was performed by using the Kullback-Leibler divergence to capture change points.
+Mukai {\it et al.}~\cite{Mukai1} extended the method~\cite{Hamasaki} by using a moving average score.
+These cooperative relationships between source hosts were expressed as a graph by applying the graphical Gaussian model to traffic data~\cite{Ide}.
+An another paper in Mukai {\it et al.}~\cite{Mukai2}, a method for detecting abnormality by visualizing a graph was newly proposed.
+
+In this section, we provide an overview of the graphical Gaussian model.
+Next, we show how to apply the graphical Gaussian model to darknet traffic data and an outline of a sparse structure learning using the graphical lasso algorithm.
+Finally, we introduce criteria for determining botnets in the previous studies using an estimated precision matrix, and an usage of a graph density.
+
+\subsection{Graphical Gaussian Model}
+These researches used the graphical Gaussian model (hereinafter, referred to as the GGM), a basic model that expresses linear dependencies between variables in a graph.
+In the GGM, it is assumed that a $N$-dimensional random variable sequence $\bm{x}=(x_{1},x_{2},\cdots,x_{N})^\mathrm{T}\in\mathbb{R}^N$ follows the $N$-dimensional multivariate Gaussian distribution.
+The multivariate Gaussian distribution can be expressed as
+\begin{equation*}
+\mathcal{N}({\bm{x}}|\mu,\Sigma)=\frac{\mathrm{det} (\Sigma^{-1})^{1/2}}{(2\pi)^{N/2}}\exp\left(-\frac{1}{2}(\bm{x}-\mu)^\mathrm{T}{\Sigma^{-1}}(\bm{x}-\mu)\right).
+\end{equation*}
+Where $\mu\in\mathbb{R}^N$ is the mean of $\bm{x}$, $\Sigma\in\mathbb{R}^{N \times N}$ is a covariance matrix and $\Sigma^{-1}\in\mathbb{R}^{N \times N}$ is a precision matrix.
+Both a covariance matrix $\Sigma$ and a precision matrix $\Sigma^{-1}$ are symmetric positive definite matrix.
+Also, the determinant of a matrix A, written $\mathrm{det}(A)$.
+
+Under the assumption of the multivariate Gaussian distribution, only if a $\Sigma^{-1}_{ij}$ is ​​0, then $x_ {i}$ and $x_ {j}$ are statistically independent given other random variables.
+In other words, it can be expressed as follows.
+\begin{equation*} 
+\Sigma^{-1}_{ij}=0\Leftrightarrow x_i \perp x_j | \bm{x} \setminus \{ x_i, x_j \}.
+\end{equation*}
+For the Gaussian distribution, independence implies uncorrelatedness.
+That is, $\Sigma^{-1}_{ij}=0$ means that there is no cooperative relationship between variables $x_{i}$ and $x_{j}$~\cite{Ide}.
+In such the GGM, an undirected graph $G = (V, E)$ is pair of a node set $V=\{x_{1}, \cdots, x_{N}\}$, an edge set $E=\{(i,j)|\Sigma^{-1}_{ij}\neq0\}$.
+Each node corresponds to a random variable, and an existence of an edge between nodes indicates a presence or absence of a cooperative relationship between nodes (variables).
+Here, although all of diagonal components of an actual precision matrix $\Sigma^{-1}$ are positive real numbers, let all of diagonal components be 0 for graph representations.
+In addition, in the analysis of darknets data, if a variable of the number of packets from a source host is made to correspond to a node, an undirected graph of the precision matrix is a graph showing cooperative relationships between the source hosts.
+Figure~\ref{fig:graph1} and~\ref{fig:graph2} are examples of undirected graphs obtained from applying the GGM to real darknet traffic data.
+
+\begin{figure}[htbp]
+\begin{tabular}{c}
+	\begin{minipage}{0.5\hsize}
+		\includegraphics[width=4cm,clip]{./Materials/undirected_graph1.png}
+		\caption{An example of \newline undirected graph 1}
+		\label{fig:graph1}
+ 	\end{minipage}
+ 	\begin{minipage}{0.5\hsize}
+		\includegraphics[width=4cm,clip]{./Materials/undirected_graph2.png}
+		\caption{An example of \newline undirected graph 2}
+  		\label{fig:graph2}
+ 	\end{minipage}
+\end{tabular}
+\end{figure}
+
+
+\subsection{Apply the GGM to Darknet Traffic Data}
+Here we show how to apply the GGM to darknet traffic data.
+When Darknet Traffic Data is applied to the GGM, let the length of observation period used for an one model learning be $T$.
+For example, when observation darknet traffic data of 10 minutes is used for an one model learning, $T$ refers to 10 minutes.
+Observation darknet traffic data of such an interval of $T$ is called a time slot.
+The Figure~\ref{fig:timeslot} helps you to understand how to divide darknet traffic dataset into time slots.
+
+\begin{figure}[htbp]
+	\includegraphics[width=8.0cm,clip]{./Materials/timeslot.eps}
+	\caption{How to divide darknet traffic dataset into time slots $(T={\rm 10min.})$}
+  	\label{fig:timeslot}
+\end{figure}
+
+Next, suppose that packets data from $N$ number of source hosts are recorded in darknet traffic data of a time slot.
+At this time, the number of packets is counted for each source hosts, and assume that the length of the time series is $M$, then time series data of the number of packets per unit time is created.
+Here, ``unit time'' is called a sampling interval.
+That is, in this case $M$ is the number of samples in a time slot and the a sampling interval is $T/M$.
+The number of packets at the time of $m$ of the $i$ th source host is represented by $y_i^{(m)}$.
+Furthermore, we convert the variable $x_i^{(m)}=\log(y_i^{(m)})$ to approximate the property of data to the Gaussian variable.
+However as an exception, if $y_i^{(m)}=0$, let $x_i^{(m)}$ be $\log0.1$.
+That is, a time slot is converted to matrix
+\begin{equation}
+\label{eq:d}
+D=[D_{im}]\in\mathbb{R}^{N \times M},
+\;\;D_{im} := x_i^{(m)}.
+\end{equation}
+
+
+\subsection{Sparse Structure Learning Using the Graphical Lasso Algorithm}
+In this section, we introduce how to estimate the precision matrix by the graphical lasso.
+The most natural way to estimate the precision matrix $\Sigma^{-1}$ is to do a maximum likelihood estimation, and it had been studied a lot in the past~\cite{Dempster, Meinshausen}.
+Under an assumption of the multivariate Gaussian distribution, the maximum likelihood solution of the precision matrix $\Sigma^{-1}$ is an inverse matrix of the sample covariance matrix $S$.
+However, a maximum likelihood estimator of the precision matrix $\Sigma^{-1}$ is usually a dense matrix, and its estimation accuracy is poor.
+In addition, if strongly correlated variables exist, there is a problem that the inverse matrix of the sample covariance matrix $S^{-1}$ causes a rank deficient, and the inverse matrix does not even exist.
+
+Although many methods to avoid this problem have been studied, Hamasaki {\it et al.} considered a sparse structure learning that can estimate the precision matrix to sparse using the graphical lasso~\cite{Friedman}.
+A sparse matrix refers to a matrix with few nonzero elements, and in a sparse structure learning, it is judged that a weak cooperative relationship is not an essential cooperative relationship. 
+And it is expected that essential cooperative relationships can be extracted by scraping them.
+
+The flow of a sparse structure learning by the graphical lasso is shown below.
+Solve the penalized maximum likelihood equation with a $\ell_1$ regularization term based on the multivariate Gaussian distribution.
+First, obtain a sample covariance matrix $S_{ij}$ from the data $D$, equation~(\ref{eq:d}).
+\begin{equation}
+\label{eq:s}
+S_{ij}=\frac{1}{M}\sum_{m=1}^{M}(x_{i}^{(m)}-\mu_{i})(x_{j}^{(m)}-\mu_{j}).
+\end{equation}
+Here, $i$ and $j$ are natural numbers from 1 to $N$, $\mu_i$ is a sample mean of $x_i$.
+Substitute the sample covariance matrix $S$ into the follow log-likelihood function
+\begin{equation*} 
+\mathrm{ln}{\prod_{m=1}^{M}}{N(\bm{x}^{(m)}|\mu,\Sigma)}=\mbox{const.}+\frac{M}{2}\left\{{\ln\mathrm{det}(\Sigma^{-1})}-\mathrm{Tr}(S\Sigma^{-1})\right\}.
+\end{equation*}
+The penalized maximize log-likelihood function with a $\ell_1$-regularization term in the form
+\begin{equation} 
+\label{eq:max} 
+{\rm arg}\mathop{\rm max}\limits_{\Sigma^{-1} \succ 0} \left({\ln\mathrm{det}(\Sigma^{-1})}-\mathrm{Tr}(S\Sigma^{-1})-r||\Sigma^{-1}||_{1}\right),
+\end{equation}
+where $r$ is a positive real number, $\|\Sigma^{-1}\|_{1}$ is a $\ell_1$-norm of $\Sigma^{-1}$ defined as
+\begin{equation*}
+	\|\Sigma^{-1}\|_{1}={\sum_{ij}^{N}}|(\Sigma^{-1})_{ij}|.
+\end{equation*}
+
+The graphical lasso is an algorithm to solve the equation~(\ref{eq:max}) in a high speed and a high accuracy using the block coordinate descent method~\cite{Banerjee}.
+The graphical lasso is implemented as a R language package ``glasso".
+Input parameters (Arguments) of ``glasso" are the sample covariance matrix $S$ and the regularization coefficient $r$, the output is the sparsely estimated precision matrix $\hat{\Sigma}^{-1}$.
+In the graphical lasso, by adjusting the value of the regularization coefficient $r$, it is possible to adjust how much the precision matrix is estimated to sparse~\cite{Tibshirani}.
+As the value of $r$ get increased, the precision matrix is estimated to be more sparse.
+From the above, it is possible to estimate the sparse precision matrix and obtain undirected graphs of the GGM.
+
+\subsection{Criteria for Determining Alerts}
+First, in the method of Hamasaki {\it et al.}~\cite{Hamasaki}, change points of the estimated precision matrix from before and after time were obtained to determine botnets.
+Kullback-Leibler divergence is used as a measure of change points.
+Kullback-Leibler divergence is a measure for measuring difference between two probability density functions $p(x)$ and $q(x)$, and it defined as
+\begin{equation}
+\label{eq:KL}
+\mathrm{D_{KL}}(p||q)=\int^{\infty}_{-\infty}{p(x)}\mathrm{log}\frac{p(x)}{q(x)}\mathrm{d}x.
+\end{equation}
+For a certain time slot, let the estimated distribution at time $t_{0}$ be $p$, the estimated distribution by one time slot before time $t_{1}$ be $q$.
+Change points of the distribution generated in time series are quantified by the above Kullback-Leibler divergence.
+Since $p$ and $q$ follow the multivariate Gaussian distribution, equation~(\ref{eq:KL}) is expanded as follows 
+\begin{equation*}
+\begin{split}
+\mathrm{D_{KL}}(p||q) &= s(t_{0}) = \int{p(\bm{x})}\mathrm{log}{p(\bm{x})}\mathrm{d}\bm{x}-\int{p(\bm{x})}\mathrm{log}{q(\bm{x})}\mathrm{d}\bm{x}\\
+	&= \frac{1}{2}(\mathrm{log}|\Sigma_{q}|-\mathrm{log}|\Sigma_{p}|+\mathrm{Tr}|\Sigma^{-1}_{q}\Sigma_{p}|)\\
+	&\quad+\frac{1}{2}(\bm{\mu_{p}}-\bm{\mu_{q}})^{\mathrm{T}}\Sigma^{-1}_{q}(\bm{\mu_{p}}-\bm{\mu_{q}})-\frac{N}{2}.
+\end{split}
+\end{equation*}
+From this, the score $s(t_{0})$ is obtained in chronological order.
+Let $\tilde{\mu}(t_{20}^{0})$ be an average from time $t_{0}$ to $t_{20}$, and $\tilde{\sigma}(t_{20}^{0})$ be a standard deviation, let $\tilde{\mu}(t_{20}^{0})+2\tilde{\sigma}(t_{20}^{0})$ be a threshold.
+When $s(t_{0})>\tilde{\mu}(t_{20}^{0})+2\tilde{\sigma}(t_{20}^{0})$ is satisfied, it is judged that a botnet is active at $t_{0}$, and an alert is issued.
+
+Hamasaki {\it et al.} had a problem that the false alert rate is high from their botnets judgment method.
+In order to solve this problem, Mukai {\it et al.}~\cite{Mukai1} improved the method of Hamasaki {\it et al.}, using a moving average score as a criterion for issuing alerts.
+The moving average score is defined as
+\begin{equation*}
+\bar{s}(t_{0}(n))=\frac{s(t_{n})+\cdots+s(t_{1})+s(t_{0})}{n}.
+\end{equation*}
+By using a moving average score, it is not distracted by temporary fluctuations of data, and it tends to grasp trends of a change of the whole data~\cite{Falt}.
+let $\tilde{\mu}(t_{25}^{10})$ be an average from time $t_{25}$ to $t_{10}$, and $\tilde{\sigma}(t_{25}^{10})$ be a standard deviation, let $\tilde{\mu}(t_{25}^{10})+2\tilde{\sigma}(t_{25}^{10})$ be a threshold.
+When $\bar{s}(t_{0}(10))>\tilde{\mu}(t_{25}^{10})+2\tilde{\sigma}(t_{25}^{10})$ is satisfied, it is judged that a botnet is active at $t_{0}$, and an alert is issued.
+
+
+\subsection{Usage of Graph Densities}
+Although above two criteria are determined from change points of probability density functions of the GGM, they did not take advantage of the characteristics of graphs of the GGM.
+Mukai {\it et al.}~\cite{Mukai2} proposed a method to judge abnormal detection by visualizing a graph of the GGM.
+Examples of a graph visualized by a method of Mukai {\it et al.} are Figure~\ref{fig:graph1} and~\ref{fig:graph2}.
+Developing this idea, in our previous research~\cite{Han} proposed a new criterion for judging abnormality using a graph density.
+Given $G=(V,E)$ that the number of nodes in the graph is $N(=|V|)$ and the number of edges is $|E|$, the graph density is defined as $d=|E|/N(N-1)$.
+The graph density is the ratio of the actual number of edges to the number of edges of the complete graph.
+If the value of graph density is higher than those in other time slots, it is considered that there are many cooperative relationships between source hosts more than other time slots.
+In our previous research~\cite{Han}, a statistical criterion for determining an abnormally high graph density value was determined and an abnormality was detected effectively.
+At that time, a criterion for selecting the optimum regularization coefficient $r$ was proposed.
+
+As an example, Figure~\ref{fig:density} is a graph in which graph densities are obtained using actual darknet traffic data and arranged in chronological order.
+$M$ is set to $6$, $T$ is set to 10 minutes, and the number of time slots is 47.
+Also, Figures~\ref{fig:graph1} and ~\ref{fig:graph2} correspond to graph 1 and 2 in Figure~\ref{fig:density}, respectively.
+Graph 1 has 151 nodes and 1515 edges, graph density is about $0.0668$.
+Graph 2 has 134 nodes and 134 edges, graph density is about $0.0075$.
+When an alerts judgment is done using this data, detailed judgment calculation is omitted, but graph 1 which is the highest graph density can be obtained as an alert.
+\begin{figure}[htbp]
+	\includegraphics[width=8.0cm,clip]{./Materials/20151029_edit.eps}
+	\caption{An example of graph density using undirected graph 1, 2}
+  	\label{fig:density}
+\end{figure}
+
+\section{Proposed Method}
+Since the method of our earlier work~\cite{Han} is effective but restrictive because its process is a batch learning type, which means that it cannot be used for a real-time analysis.
+In this research, we extend the method of~\cite{Han} to enable an online processing and make an idea for an abnormal detection to issue alerts in real-time.
+In this section, we introduce a new alert judgment method in this research, describe an online processing of anomaly detection using its alert judgment method and describe its prototype implementation. 
+Finally we discuss about an evaluation of a calculation time reduction and parameter tunings.
+
+\subsection{Anomaly-Based Alert Judgment Method for Online Processing}
+First, we considered an abnormality detection based method of discriminating alerts while online processing.
+We could quantitatively quantize cooperative relationships among hosts in one time slot as a graph density.
+We desired to automatically identify time slots with abnormally high graph density compared with graph densities of other time slots by online processing.
+For this purpose, we prepared graph densities of past $K$ time slots from the current time slot as a comparison object of the anomaly-based detection, and considered a method of judging whether the current calculated graph density of time slot by is abnormal.
+The method is described as following.
+
+Let $\bm{d} = (d_{1}, d_{2}, \cdots, d_{K})$ be a sequence in which graph densities of obtained time slots are arranged in descending order.
+Next, let $\bm{d}_{(i)} = (d_{i}, d_{i+1},\cdots,d_{K})$.
+$i$ is a natural number.
+Let $\sigma^{2}_{(i)}$ be a variance of elements of $\bm{d}_{(i)}$.
+At this time, assume that the maximum $i$ which satisfies $\sigma^{2}_{(i+1)}/\sigma^{2}_{(i)}<\theta (0\leq \theta \leq 1)$ is $i_{max}$ and set time slots corresponding to $(d_{1},d_{2},\cdots,d_{i_{max}})$ as an alert.
+Here $\theta$ is usually set in $0.95$.
+Here, not only the current calculated time slot by online processing but also all of the past $K$ time slots are objects of alerts.
+Finally, we look for a destination port with the highest ratio of unique hosts among the time slots judged as alerts and examine the port protocol and the hosts that sent the packets to the port.
+
+Also, a sparsity of the estimated precision matrix from the graphical lasso differs depending on the value of regularization coefficient $r$.
+That is, graph density values change according to the value of $r$.
+In the batch processing method~\cite{Han}, only one optimum value of $r$ was selected based on input data.
+However, we thought that it is important to issue an alert rather than deciding the optimal value of $r$ for online processing this time.
+In this method, instead of selecting only one value of $r$, calculate the graphical lasso by setting several values of $r$ in advance, and issue an alert when a condition of an alert is satisfied for one value of $r$ at least.
+
+
+\subsection{Algorithm for Online Processing}
+Here, the procedure of the online processing is specifically shown.
+Suppose that there is a sequence $\mathcal{D}=\{D_1, D_2, \cdots, D_K\}$ of data matrices obtained from time series of time slots and a set $d_{\mathcal{D}}^{(r)}=\{d^{(r)}_{D_1}, d^{(r)}_{D_2}, \cdots, d^{(r)}_{D_K}\}$ of $K$ graph densities calculate from $\mathcal{D}$ in advance.
+$d^{(r)}_{D_i} (i \in \{1, 2, \cdots, K\})$ is the graph density for each predetermined regularization coefficient $r$ in the data matrix $D_i$.
+Here, it is assumed that the value of $r$ is preset like $r \in R ( =\{r_1, r_2, \cdots, r_s\} )$.
+For example, preset $R=\{0.2, 0.4, \cdots, 1.8\}$.
+For an online processing, a matrix of updated time slot is given by $D_t$.
+The pseudo code for an online processing is described in Algorithm~\ref{alg1}.
+
+\begin{algorithm}[h]                   
+\caption{The Pseudo Code for An Online Processing}
+\label{alg1}
+\begin{algorithmic}
+\FOR{$t = K+1, K+2, K+3, \cdots$}
+	\STATE Read $D_t$
+	\STATE Update $\mathcal{D}$
+	\FOR{$r$ in $R$}
+		\STATE Compute $d_{D_t}^{(r)}$ from $D_t$
+		\STATE Update $d_{\mathcal{D}}^{(r)}$
+		\STATE Compute an alert
+		\vspace*{0.1cm}
+		\IF{$d_{D_t}^{(r)}$ is judged as an alert}
+			\vspace*{0.1cm}
+			\STATE After determining the priority, ouput an alert
+			\STATE Remove $d_{D_t}^{(r)}$ from $d_{\mathcal{D}}^{(r)}$
+		\ENDIF
+	\ENDFOR
+\ENDFOR
+\STATE Note: The updating $\mathcal{D}$ means that links $D_t$ to $\mathcal{D}$ and deletes the oldest time slot in $\mathcal{D}$.
+Similarly, the updating $d_{\mathcal{D}}^{(r)}$ means that links $d_{D_t}^{(r)}$ to $d_{\mathcal{D}}^{(r)}$ and deletes the oldest graph density in $d_{\mathcal{D}}^{(r)}$.
+\end{algorithmic}
+\end{algorithm}
+
+When updating $\mathcal{D}$ and $d_{\mathcal{D}}^{(r)}$, keep each size at $K$.
+In this way, the number of time slots used for an alert determination is fixed like a sliding window.
+By this procedure, an alert determination can be made sequentially from updated data, and a computation cost has been reduced because only the graphical lasso needs to be calculated for updated data.
+
+\subsection{Prototype Implementation}
+We implemented a prototype of the proposed method using a program language R and its library ``glasso''.
+In the summer of 2017, we installed the program at the Cyber ​​Security Laboratory, NICT.
+It is important to be able to online-processing input data in real-time on the proposed method.
+In this prototype, data obtained from 8 different darknet sensors operated by the NICT are used for input directly and implemented successfully.
+In addition, these darknet sensors are installed in different countries, and the scale of IP addresses monitored by each sensor is from 5 to about 30,000 IP addresses.
+
+We use a transmission time, a source IP address, a destination IP address (darknet host), and a destination port of TCP packets observed in darknet.
+Below is a brief description of the characteristics of nicter's darknet.
+In 2017, the total number of observation packets per one IP address was about 560 thousand packets combined with TCP and UDP protocols from nicter's 300 thousand darknet observation IP addresses~\cite{NICTER2017}.
+TCP packets over 600 million packets were observed a day at the peak.
+Furthermore, the number of unique source host IP addresses for TCP packets varies in the range of approximately 700 thousand to 3 million IP addresses per a day.
+Differences among sensors of darknet are different from the scale of observation IP addresses and the country where darknet is installed.
+Each sensor has different subnets (network part), and one sensor belongs to almost the same subnet.
+
+\subsection{Calculation Time}
+In this section, we evaluate the calculation time of the program from prototype implementation.
+First, the specification of the computer which installed in the Cyber Security Laboratory, NICT is 16 GB of memory, CPU is Intel Xeon E3-1230 v3 3.30 GHz 4 cores 8 threads.
+In order to perform the real-time processing with limited resources, it is necessary to finish a current calculation before an updating of next time slot.
+The largest computational complexity of the program is the graphical lasso algorithm $O(N^3)$~\cite{Witten}.
+Where $N$ is the number of nodes in the graph, and in our problem, it corresponds to the number of source hosts in the processing target time slot.
+In general, as the scale of darknets gets increased, $N$ also increases, so if the scale of darknets is large, obviously we need to shorten the calculation time.
+
+In order to shorten the calculation time, we devised the following measures.
+\begin{itemize}
+	\item Restrict the regularization coefficient, $r$.
+	\item Ignore third and fourth octets of IP addresses of source hosts.
+	\item Select source hosts at uniformly random and limit the number of nodes, $N$.
+\end{itemize}
+Of course, there is a trade-off relationship with such restrictions.
+The restriction of $r$ refers to reduce the number of elements of $r$.
+This restriction only reduces the number of trials of $r$, and it is thought that the result is less affected.
+Next, ignoring octets means that IP addresses on the same subnet are regarded as one host.
+In this case, a false negative may occur for hosts infected with malware in the same subnet.
+Finally, the limitation of the number of source hosts $N$ means that when $N$ exceeds the limit number, only part of the cooperative relationship between hosts is calculated.
+Furthermore, as N exceeds the limit number, the larger the difference between N and the limit number, the lower the accuracy of cooperative relationship estimation.
+As the limitation of $N$ has the most influence on the result among these, it is necessary to think in a direction that $N$ should not be limited as much as possible.
+In addition, since characteristics of darknet traffic data vary depending on its scale and the country in which it is installed, it is necessary to periodically adjust the above-mentioned parameters to be limited for each darknet.
+
+
+\subsection{Parameter Tuning}
+In this section, we describe evaluations of parameter tunings.
+Many unknown malware are less cooperative than known malware and tend to be buried in other events.
+If you loose parameters to capture unknown malware, alerts to known malware are ridiculously taken, so operation will be deviated.
+It is necessary to set appropriate parameters so that such a situation does not occur.
+This parameter tunings are heuristic evaluation methods based on empirically, the goal are to obtain about 10 to 20 daily alerts per a darknet sensor and alerts to unknown malware as much as possible.
+
+\vspace*{0.3 cm}
+\noindent
+\textbf{A Length of Time Slot $T$}\\
+On designing algorithms for the real-time processing, an alert is delayed the length of a time slot $T$ at the maximum, irrespective of the processing speed of the computer.
+If the real-time processing is a goal, the $T$ should not be too long.
+And the $T$ needs to complete processing of the current time slot before a next time slot arriving.
+Therefore, if the $T$ is shorter than 10 minutes, various restrictions have to be added in order to make it in time for the calculation.
+It was noticed from experience that it can not be said that sufficiently good modelings and learnings can be done.
+As a result of conducting preliminary experiments to determine the value of $T$, we decided that it is appropriate to set the value of $T$ to 10 minutes, and now we set $T$ to 10 minutes for all darknet traffic data.
+
+\vspace*{0.3 cm}
+\noindent
+\textbf{A Threshold $\theta$ and The Number of Time Slots $K$}\\
+There is a trade-off relationship between false positives (Type I error) and false negatives (Type I\hspace{-.1em}I error) in an above alert judgment equation $\sigma^{2}_{(i+1)}/\sigma^{2}_{(i)}<\theta$.
+Parameters related in this trade-off relationship are the threshold $\theta$ of an alert judgment equation and the number of time slots $K$.
+Decreasing $K$ or increasing $\theta$ raises the false positive rate, and conversely increasing $K$ or decreasing $\theta$ raises the false negative rate.
+Since this trade-off relationship depends on input data, it hasn't quantitatively represented it at the present stage.
+However, we fixed $K = 432$ and decided to adjust the value of $\theta$ from practical experiences.
+The meaning of fixing $K$ to 432 refers to that if $T$ is set 10 minutes, the total length of data used for an alert judgment is 3 days of data.
+And now we set $\theta=0.95$ for all darknet traffic data.
+However, with the parameter setting of the same condition, the number of average alerts greatly differs depending on the darknet sensor.
+The smaller the observation host scale of the darknet sensor, the more alerts are obtained.
+The reason is that the darknet sensor with a small observation host scale has an overall lower graph densities averages compared to the large scale of darknet sensor relatively.
+We plan to set $\theta$ differently for each darknet sensors in the future.
+
+
+\vspace*{0.3 cm}
+\noindent
+\textbf{The Number of Sample $M$}\\
+When converting time slots to forms of data matrix $D$, the estimated precision matrix changes depending on how many samples to obtain the sample covariance matrix $S$.
+The $M$ of the equation~(\ref{eq:d}) and the equation (\ref{eq:s}) is equivalent to this parameter, the number of samples $M$.
+This is an important parameter for model selection.
+The sampling interval of the model is $T/M$.
+Generally, it is said that as the number of samples increases, it is a good model selection.
+
+Figures~\ref{fig:M6},~\ref{fig:M10} and~\ref{fig:M20} are simulation results when $M$ is set to $6, 10, 20$ using the same darknet traffic data of 124 IP addresses scale.
+These are graph in which graph densities are arranged in a chronological order.
+The red horizontal line is the baseline of alerts.
+As the $M$ increases, overall graph density values decrease, the average also decreases, indicating that the difference from the highest graph density is larger.
+That means malignant activities can be easily judged from cooperative relationships among source hosts, and it is considered that the more true sample covariance matrix could be obtained.
+In addition to this result, the same simulation was conducted for two different darknets of a same scale, and the same tendency was obtained.
+
+However, just setting $M$ to be large is not necessarily good.
+As the value of $M$ gets increased, the sampling interval of the model becomes shorter.
+Since this method focuses on cooperativeness of malware, we want to ensure that the whole of one communication in which multiple hosts infected with malware include in one sample as much as possible.
+Depending on an environment such as the scale of the darknet, the average time to observe one communication of malignant activities is different.
+Currently, we set $M=6$ for all darknet traffic data, but in the future, we will control to set $M$ larger as the scale of darknets is smaller, and set $M$ smaller as the scale of darknets is larger. ($6 \leq M \leq 20$)
+
+\begin{figure}[htb]
+	\includegraphics[width=8cm,clip]{./Materials/sample_6.eps}
+	\caption{Simulation result when $M = 6, r=1.0$}
+  	\label{fig:M6}
+	\vspace*{0.3cm}
+	\includegraphics[width=8cm,clip]{./Materials/sample_10.eps}
+	\caption{Simulation result when $M = 10, r=0.6$}
+  	\label{fig:M10}
+	\vspace*{0.3cm}
+	\includegraphics[width=8cm,clip]{./Materials/sample_20.eps}
+	\caption{Simulation result when $M = 20, r=0.3$}
+  	\label{fig:M20}
+\end{figure}
+
+\vspace*{0.3 cm}
+\noindent
+\textbf{Regularization Coefficient $r$}\\
+We have set the regularization coefficient $r \in R=\{0.1, 0.2, \cdots, 2\}$.
+By the way, we have found that the value of $r$ can be fine-tuned even with decimal point 6 digits and the ``glasso'' program can be run.
+We confirmed whether results (alerts) obtained by finely adjusting the value of $r$ with decimal point 6 digits will change.
+As a result, it is possible to make a slight difference in graph density values, but the difference was negligibly small.
+Rather, the finer the interval, the longer the calculation time takes.
+Furthermore, since the estimated precision matrix to exceed 1.8 becomes almost a zero matrix, we decided to increase by 0.2 from 0.2 to 1.8 in an online processing.
+That is, $r \in R=\{0.2, 0.4, \cdots, 1.8\}$.
+
+Also, as the number of zero elements in the estimated precision matrix is larger, the calculation time becomes shorter.
+In other words, the computation time becomes longer as the value of $r$ is smaller, and the computation time becomes shorter as the value of $r$ is larger.
+If we calculate by setting the value of $r$ from 0.2 to 1.8 increasing by 0.2 for large-scale darknet traffic data, we will have to strictly limit parameters introduced in Section 5.4.
+Since most of alerts obtained with the value of $r$ being 0.2 or 0.4 can be obtained same alerts even at 0.6, only for large-scale darknets, we set the value of $r$ from 0.6 to 1.8 increasing by 0.2. $(r \in R=\{0.6, 0.8, \cdots, 1.8\}.)$
+
+\section{Detection Instances by Continuous Operations}
+Since September 2017, we have been continuously operating our proposed method with darknets installed at 8 different places which operated by the NICT.
+Each darknet is distinguished by the difference in the scale of IP addresses and countries where it is installed.
+The IP address scale of the darknet used this time, the smallest one is 5, the biggest one is about 30,000.
+We conducted trial operation from our proposed method from about 35,000 IP addresses as a whole.
+In this section, we introduce a preprocessing of data, and instances detected during continuous operations.
+
+\subsection{Preprocessing of Data}
+This time, only TCP packets to which a SYN flag is attached are collected.
+Then, when a large number of packets arrive constantly to a specific TCP port, or when packets are constantly arriving from many hosts, that TCP port is excluded.
+For example, many packets for TCP port 22 (SSH), 23 (Telnet) and 80 (HTTP) are constantly observed.
+Therefore, we intentionally exclude it considering the possibility that other packets would be buried due to those many packets.
+In addition, we expect to get an unknown vulnerable TCP port as an alert by excluding known fragile TCP ports that we have been frequently obtaining as alerts.
+
+
+\subsection{Detection Instances of Activities Related to Mirai Variants}
+In this subsection, we introduce instances that seem to be interesting among alerts obtained in continuous operation from September 2017.
+These are detection instances of activities related to malware Mirai variants.
+As the comparative method, the method of~\cite{Mukai1} that a moving average score by the Kullback-Leibler divergence was used.
+In continuous operations, TCP ports 22, 23, 80, 443, 445, 1433, 2323, 3389, 5358, and 7547 are excluded in a step of preprocessing.
+
+Figure~\ref{fig:37215_1} is the graph density obtained at 12:30 on December 5, 2017, in darknet ``F''.
+In this figure, the horizontal axis shows the observation time in Japan Standard Time (JST), and the vertical axis show the value of the graph density, and the regularization coefficient $r$ is 1.4.
+The scale of the IP address of the darknet ``F'' is five.
+Therefore, traffic data observed from the darknet ``F'' is not large, and as a $r$ get increased, graph densities often becomes 0.
+A graph density of 0 indicates a case that there are two or more nodes in graph but there is no edge.
+Figure~\ref{fig:52869} is the graph density obtained at 20:50 on December 5, 2017, in darknet ``F''.
+It is an alert result on the same darknet ``F'' as the figure~\ref{fig:37215_1}, and it gets an alert again about 8 hours after the figure~\ref{fig:37215_1}.
+Figure~\ref{fig:37215_2} is the graph density obtained at 8:50 on December 11, 2017, in darknet ``B''.
+The regularization coefficient $r$ is 1.6.
+The scale of the IP address of the darknet ``B'' is 124.
+Compared to Darknet ``F'', the darknet ``B'' is large in scale to some extent, so the graph density of all time periods is greater than 0 even when $r = 1.6$.
+
+\begin{figure}[htb]
+\begin{center}
+	\includegraphics[width=8cm,clip]{./Materials/201712051230_1.4_d.eps}
+	\caption{Graph densities at 12:30 on December 5, 2017 in darknet ``F''}
+  	\label{fig:37215_1}
+	\vspace*{0.5cm}
+	\includegraphics[width=8cm,clip]{./Materials/201712052050_1.4_d.eps}
+	\caption{Graph densities at 20:50 on December 5, 2017 in darknet ``F''}
+  	\label{fig:52869}
+	\vspace*{0.5cm}
+	\includegraphics[width=8cm,clip]{./Materials/201712110850_1.6_d.eps}
+	\caption{Graph densities at 8:50 on December 11, 2017 in Darknet ``B''}
+  	\label{fig:37215_2}
+\end{center}
+\end{figure}
+
+An alert in Figure~\ref{fig:52869} is issued against to 52869/TCP and both alerts in Figures~\ref{fig:37215_1} and~\ref{fig:37215_2} are issued against 37215/TCP.
+With regard to 37215/TCP, we were able to obtain alerts not only for darknets ``B'' and ``F'' but also for ``C'' (IP address scale: 125) and ``G'' (IP address scale: 12) at the same time.
+Figure~\ref{fig:chart} shows a chronological chart of the number of unique hosts observed in entire darknet of about 300 thousand IP addresses scales which operated by the NICT.
+On December 5, 2017, both TCP port 37215 and 52869 were seen to be rapidly increasing the number of unique hosts.
+As for darknet ``F'', it can be seen that as an alert obtained in real-time on that day when an event such as an abrupt increase in the number of hosts occurred.
+
+\begin{figure}[htb]
+	\includegraphics[width=8cm,clip]{./Materials/chart.eps}
+	\caption{Chronological chart of the number of unique hosts observed in our entire darknet}
+  	\label{fig:chart}
+\end{figure}
+
+Figures~\ref{fig:KL_50} and~\ref{fig:KL_56} are the results obtained using the moving average score as a comparative method.
+The comparative targets of Figure~\ref{fig:KL_50} are Figures~\ref{fig:37215_1} and~\ref{fig:52869}, the comparative target of Figure~\ref{fig:KL_56} is a Figure~\ref{fig:37215_2}.
+Since Figures~\ref{fig:37215_1} and~\ref{fig:52869} are the same date of the same darknet ``F'', the moving average score method was applied collectively at the time of Figure~\ref{fig:52869}.
+Figure 14 is the moving average score by Kullback-Leibler divergence obtained at 20:50 on December 5, 2017, in darknet ``F''.
+The regularization coefficient $r$ is 1.4.
+The black line is the moving average score, and the green line is the threshold.
+If the moving average score exceeds the threshold, it becomes a red circle and it becomes an alert in the moving average score method.
+The blue dashed line indicates the time when an alert was obtained by the judgment method using the graph density.
+In the judgment method using graph density, it can be seen that many alerts are obtained from 12:00 on December 5, 2017.
+On the other hand, the moving average score method does not get an alert.
+Since this time zone is the time when the number of unique hosts to 37215, 52869/TCP increased rapidly, it is desirable to obtain a lot of alerts.
+Figure~\ref{fig:KL_56} is the moving average score by Kullback-Leibler divergence obtained at 8:50 on December 11, 2017, in darknet ``B''.
+The regularization coefficient $r$ is 1.6.
+Alerts are obtained by the judgment method using graph density at 8:50 on December 11, 2017, but no alert is obtained by the moving average score method.
+Alerts that were missed by the moving average score method could be obtained as alerts in the judgment method using graph density.
+And, alerts obtained this time have characteristic malignant activities.
+
+\begin{figure}[htb]
+\begin{center}
+	\includegraphics[width=8cm,clip]{./Materials/KL_50_201712051250_1.4.eps}
+	\caption{Moving average score by KL divergence at 20:50 on December 5, 2017 in darknet ``F''}
+  	\label{fig:KL_50}
+	\vspace*{0.5cm}
+	\includegraphics[width=8cm,clip]{./Materials/KL_56_201712110850_1.6.eps}
+	\caption{Moving average score by KL divergence at 8:50 on December 11, 2017 in darknet ``B''}
+  	\label{fig:KL_56}
+\end{center}
+\end{figure}
+
+Details of the alert obtained this time are described below.
+According to the NICTER observation report~\cite{NICTER}, 52869/TCP states that the situation is as follows.
+\begin{itemize}
+	\item  A UPnP interface (52869/TCP) of the certain router product of the company ``Z'' is accessible from the Internet.
+	\item Increased scanning of 52869/TCP in international darknet observation networks.
+	\item The vulnerability exists in the miniigd SOAP of the Realtek SDK~\cite{Zeroday}
+	\item In 52869/TCP communications, a payload that attacks command injection vulnerability (CVE-2014-8361~\cite{CVE}) is seen.
+	\item Executable files of Mirai variants are downloaded from the URL described in the source code.
+\end{itemize}
+For 37215/TCP, an attack similar to the attack addressed to 52869/TCP has been confirmed.
+An attack directed to 37215/TCP is also an attack targeting the vulnerability of router products of the company ``Y'' in the same way.
+The relevance between the scan for 52869, 37215/TCP and Mirai's variants are also touched on reports from multiple security vendors~\cite{Rise,Warning}．
+
+\section{Conclusion}
+We were able to process online anomaly detection method using the sparse structure learning algorithm ``Graphical Lasso'' and an alert judgment method by graph density.
+An online processing was put to practical uses, and the calculation time was shortened and parameter tunings were evaluated.
+We were able to introduce instances of an activity related to Mirai's variants from an alert result detected at continuous operations.
+The result of this time was that we could obtain alerts in real-time as the number of hosts increased sharply.
+However, our goal is to get an alert at the stage before such an event occurs.
+For example, a few hosts sent huge packets seem like it is their pre-survey a couple of weeks before the attack against 52869, 37215/TCP occurred.
+Although it was thought that there are cooperative relationships between a few hosts, our method tends to make it impossible to grasp cooperative relationships between a few hosts as increasing the scale of the darknet's observation IP addresses.
+Actually, we are not able to detect 52869, 37215/TCP from large scale darknets (4096 IP scale, about 30,000 IP scale) by our method in this time.
+It is thought that applying parameter settings to all darknets in the same way without considering the scale of darknets is a major cause.
+
+We have to decide optimal parameters for each darknet to obtain alerts regardless of the scale of the darknet for next step.
+Although this time parameter tunings were mainly based on experience, in future works it is necessary to quantitatively and objectively evaluate.
+In particular, we plan to make a probabilistic evaluation by fixing the parameters other than $M$, calculating the ratio of false positives and false negatives using multiple $M$.
+We also plan to evaluate $\theta$ in the same way with the other parameters fixed as well.
+Based on such an evaluation, it is also necessary to obtain the accuracy of the entire alerts, the accuracy of our method.
+At that time, we need correct labels, but we consider artificially labeling by the experts who is in charge of the nicter's operation.
+
+Next, we anticipate that we can obtain alerts at an earlier stage by taking countermeasures against situations where cooperative relationships between a few hosts can not be grasped due to non-essential cooperative relationships among many hosts.
+Also, we apply this method to other darknet sensors, especially large darknet sensors with a scale of over 10,000 IP addresses.
+Up to now, filtering of port in preprocessing was done manually, but automatic processing is also one of future works.
+In addition, it will be tested not only for TCP ports but also for UDP ports.
+
+
+%\section*{Acknowledgments}
+%We appreciate the feedback offered by everyone of Cyber Security Laboratory, NICT.
+%Our work was partially supported by ``PRACTICE : Proactive Response Against Cyber-Attacks Through International Collaborative Exchange'' administered by the Ministry of Internal Affairs and Communications.
+
+\begin{thebibliography}{25}
+
+\bibitem{Akiyama}
+M. Akiyama, T. Kawamoto, M. Shimamura, T. Yokoyama, Y. Kadobayashi, and S. Yamaguchi. A Proposal of Metrics for Botnet Detection Based on Its Cooperative Behavior. In {\it Proceedings of the SAINT 2007 Internet Measurement Technology and its Applications to Building Next Generation Internet Workshop}, 2007.
+
+\bibitem{Ali}
+S. H. A. Ali, S. Ozawa, T. Ban, J. Nakazato, and J. Shimamura. A Neural Network Model for Detecting DDoS Attacks Using Darknet Traffic Features. In {\it 2016 International Joint Conference on Neural Networks (IJCNN), IEEE}, 2016.
+
+\bibitem{Bailey}
+M. Bailey, E. Cooke, F. Jahanian, J. Nazario, and D. Watson. The Internet Motion Sensor-A Distributed Blackhole Monitoring System. In {\it NDSS}, 2005.
+
+\bibitem{Bailey2}
+M. Bailey, E. Cooke, F. Jahanian, A. Myrick, and S. Sinha. Practical darknet measurement. In {\it 40th Annual Conference on Information Sciences and Systems, IEEE}, 2006.
+
+\bibitem{Ban}
+T. Ban, L. Zhu, J. Shimamura, S. Pang, D. Inoue, and K. Nakao. Detection of Botnet Activities Through the Lens of a Large-Scale Darknet. {\it In International Conference on Neural Information Processing, Springer}, 2017.
+
+\bibitem{Banerjee}
+O. Banerjee, L. E. Ghaoui, and A. d’Aspremont. Model Selection Through Sparse Maximum Likelihood Estimation for Multivariate Gaussian or Binary Data. {\it Journal of Machine learning research, 9(Mar)}, 2008.
+
+\bibitem{Choi}
+S. Choi, J. Song, S. Kim, and S. Kim. A Model of Analyzing Cyber Threats Trend and Tracing Potential Attackers Based on Darknet Traffic. {\it Security and Communication Networks}, 7(10), 2014.
+
+\bibitem{CVE}
+CVE-2014-8361 Detail. \url{https://nvd.nist.gov/vuln/detail/CVE-2014-8361}, [Accessed January 2018].
+
+\bibitem{CyberLab}
+Cybersecurity Laboratory, Cybersecurity Research Institute
+National Institute of Information and Communications Technology. NICTER Analysis Report 2016. \url{http://www.nict.go.jp/en/cyber/4otfsk00003rpx3e-att/NICTER_report_2016.pdf}, [Accessed December 2017].
+
+\bibitem{Dempster}
+A.P. Dempster. Covariance Selection. {\it Biometrics}, 1972.
+
+\bibitem{Falt}
+J. Falt, and S. D. Blostein. A Bayesian Approach to Two-Sided Quickest Change Detection. {\it IEEE International Symoposium on Information Theory}, 2014.
+
+\bibitem{Feily}
+M. Feily, A. Shahrestani, and S. Ramadass. A Survey of Botnet and Botnet Detection. In {\it Third International Conference on Emerging Security Information, Systems and Technologies, IEEE}, 2009.
+
+\bibitem{Friedman}
+J. Friedman, T. Hastie, and R. Tibshirani. Sparse Inverse Covariance Estimation with the Graphical Lasso. {\it Biostatistics}, 9(3), 2008.
+
+\bibitem{Garcia}
+S. Garc\'{i}a, A. Zunino, and M. Campo. Survey on Network‐based Botnet Detection Methods. {\it Security and Communication Networks}, 7(5), 2014.
+
+\bibitem{Garcia2}
+S. Garc\'{i}a, A. Zunino, and M. Campo. Botnet Behavior Detection Using Network Synchronism. In {\it Privacy, Intrusion Detection and Response: Technologies for Protecting Networks}, 2011.
+
+\bibitem{Gu}
+G. Gu, J. Zhang, and W. Lee. BotSniffer: Detecting Botnet Command and Control Channels in Network Traffic. In {\it Proceedings of the 15th Network and Distributed System Security Symposium (NDSS)}, 2008.
+
+\bibitem{Gu2}
+G. Gu, R. Perdisci, J. Zhang, and W. Lee. BotMiner: Clustering Analysis of Network Traffic for Protocol-and Structure-Independent Botnet Detection. In {\it USENIX security symposium}, 2008.
+
+\bibitem{Hamasaki}
+H. Hamasaki, M. Kawakita, J. Takeuchi, K. Yoshioka, D. Inoue, M. Etoh, and K. Nakao. Proposal of Botnet Detection Based on Structure Learning and Its Application to Darknet Data. {\it Symposium on Cryptography and Information Security}, 2011. (in Japanese)
+
+\bibitem{Han}
+C. Han, K. Kono, S. Tanaka, M. Kawakita, and J. Takeuchi. Botnet Detection Using Graphical Lasso with Graph Density. {\it In International Conference on Neural Information Processing, Springer}, 2016.
+
+\bibitem{Ide}
+T. Ide, A.C. Lozano, N. Abe, and Y, Liu. Proximity-Based Anomaly Detection Using Sparse Structure Learning. {\it SDM}, 2009.
+
+\bibitem{McCarty}
+B. McCarty. Botnets: Big and Bigger. {\it IEEE Security \& Privacy}, 99(4), 2003.
+
+\bibitem{Meinshausen}
+N. Meinshausen, and P. Buhlmann. High-Dimensional Graphs and Variable Selection with the Lasso. {\it The annals of statistics}, 2006.
+
+\bibitem{Mukai1}
+S. Mukai, Y. Kawamura, M. Kawakita, and J. Takeuchi. Performance Evaluation of Botnet Detection Method Using a Sparse Structure Learning. {\it Symposium on Cryptography and Information Security}, 2015. (in Japanese)
+
+\bibitem{Mukai2}
+S. Mukai, Y. Kawamura, M. Kawakita, and J. Takeuchi. Botnet Detection Using Anomaly Detection Based on Sparse Structure Learning. {\it IEICE Tech. Rep., vol. 114, no. 471, ISEC2014-105}, 2015. (in Japanese)
+
+\bibitem{Nakao}
+K. Nakao, D. Inoue, M. Eto, and K. Yoshioka. Practical Correlation Analysis Between Scan and Malware Profiles Against Zero-Day Attacks Based on Darknet Monitoring. {\it IEICE TRANSACTIONS on Information and Systems}, 92(5), 2009.
+
+\bibitem{NICTER}
+NICTER Observation Report: Activities Related to Mirai's Variants That Exploit the Vulnerability of Router Products to Spread Infection (2017-12-19). \url{http://www.nicter.jp/report/2017-01_mirai_52869_37215.pdf}, [Accessed December 2017]. (in Japanese)
+
+\bibitem{NICTER2017}
+Nicter Report 2017. \url{https://www.nict.go.jp/cyber/report/NICTER_report_2017.pdf}, [Accessed January 2018].
+
+\bibitem{NICTERWEB}
+NICTERWEB. \url{http://www.nicter.jp/}, [Accessed December 2017].
+
+\bibitem{Rise}
+Rise of One More Mirai Worm Variant. \url{https://blog.fortinet.com/2017/12/12/rise-of-one-more-mirai-worm-variant}, [Accessed January 2018].
+
+\bibitem{Strayer}
+W. T. Strayer, R. Walsh, C. Livadas, and D. Lapsley. Detecting Botnets with Tight Command and Control. In {31st IEEE Conference on Local Computer Networks}, 2006.
+
+\bibitem{Tibshirani}
+R. Tibshirani. Regression Shrinkage and Selection via the Lasso: a Retrospective. {\it Journal of the Royal Statistical Society: Series B (Statistical Methodology), 73(3)}, 2011.
+
+\bibitem{Warning}
+Warning: Satori, a Mirai Branch Is Spreading in Worm Style on Port 37215 and 52869. \url{http://blog.netlab.360.com/warning-satori-a-new-mirai-variant-is-}\\\url{spreading-in-worm-style-on-port-37215-}\\\url{and-52869-en/}, [Accessed January 2018].
+
+\bibitem{Witten}
+D. Witten, J. Friedman, and N. Simon. New Insights and Faster Computations for the Graphical Lasso. {\it Journal of Computational and Graphical Statistics}, 20(4), 2011.
+
+\bibitem{Yamauchi}
+S. Yamauchi, M. Kawakita, and J. Takeuchi. Botnet Detection Based on Non-Negative Matrix Factorization and the MDL Principle. In {\it International Conference on Neural Information Processing, Springer}, 2012.
+
+\bibitem{Zeroday}
+(0Day) Realtek SDK miniigd AddPortMapping SOAP Action Command Injection Remote Code Execution Vulnerability. \url{https://www.zerodayinitiative.com/advisories/ZDI-15-155/}, [Accessed December 2018].
+
+\end{thebibliography}
+
+\end{document}
