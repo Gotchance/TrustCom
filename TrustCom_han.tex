@@ -210,7 +210,7 @@ Finally, time slots corresponding to graph densities showing anomalously high va
 
 
 \section{{\it GLASSO} Engine (Online-mode)}
-In this section, we propose a novel {\it GLASSO} engine that analyzes darknet traffic in real-time.
+In this section, we propose a novel {\it GLASSO} engine that analyzes darknet traffic in real time.
 The engine contains an online processing algorithm and an alert judgment method.
 The input of the engine the packet capture (PCAP) file of darknet traffic for $T$ seconds and other parameters, while the output is alert information generated from the PCAP files in the time slots classified as outliers.
 The alert information includes the time stamp, the targeted destination TCP port number, the source IP addresses, and the number of addresses.
@@ -257,16 +257,16 @@ Here, the $length()$ function obtains the length of the vectors.
   \WHILE{a time slot $t$ is updated newly}
     \STATE preprocess a time slot $t$
     \STATE make $\bm{D}_t$ from a time slot $t$
-    \STATE compute $S$ from $\bm{D}_t$
+    \STATE compute $S_t$ from $\bm{D}_t$
   	\FOR{$r$ in $R$}
-      \STATE compute ${(\hat{\Sigma^{-1}})}_t^{(r)}$ using the graphical lasso (input: $S,r$)
+      \STATE compute ${(\hat{\Sigma^{-1}})}_t^{(r)}$ using the {\it glasso($S_t,r$)}
       \STATE compute $d_t^{(r)}$ from ${(\hat{\Sigma^{-1}})}_t^{(r)}$
       \STATE add $d_t^{(r)}$ to $\bm{d}^{(r)}$
       \IF{$length(\bm{d}^{(r)}) = K$}
         \STATE {\bf call} {\it alert-judgment-method($\bm{d}^{(r)}, K, \theta$)}
         \IF{there are $outliers$}
           \STATE collect alert information from $outliers$
-          \STATE output alerts
+          \RETURN alerts
           \STATE remove $outliers$ from $\bm{d}$
         \ELSE
           \STATE remove the most old time slot from $\bm{d}^{(r)}$
@@ -496,7 +496,6 @@ Finally, please note that unknown attacks will be clarified in the future, and f
 
 \begin{table}[tb]
   \centering
-  \vspace{-0.1cm}
   \caption{Checking Answers Using Limited Answer Table According to Types of Cyberattack (TCP port)}
   \label{tab:answer}
 \begin{tabular}{c||c|c|c}
@@ -512,7 +511,6 @@ Total  & 31  & 3  & 0   \\ \hline
 
 \begin{table}[tb]
   \centering
-  \vspace{-0.1cm}
   \caption{Performance of Malware Activity Detection of {\it GLASSO} Engine}
   \label{tab:accuracy}
 \begin{tabular}{c|c|c|c}
