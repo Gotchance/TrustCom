@@ -50,34 +50,35 @@ In our evaluation, we measure the detection performance of the proposed method w
 \end{abstract}
 
 \begin{IEEEkeywords}
-Real-time detection, Malware, Network scan, Darknet, Cooperativeness, Outlier detection.
+Real-time detection, Malware, Network scan, Darknet, Cooperation, Outlier detection.
 \end{IEEEkeywords}
 
 
 \section{Introduction}
-The number of cyber attacks has been growing, and they often use malware as their tool and their types have been diversified in recent years.
-To minimize the impact of cyber attacks, it is important to quickly and precisely grasp actual behaviors of malware on the Internet.
-Many of intrusion detection systems and firewalls have already implemented signature-based and/or whitelist/blacklist-based access control functions, but these cannot cope with unknown malware variants and brand-new malware.
-Network security operators or analysts may conduct a heuristic and rule-based analysis, but it is costly and human error may occur.
-Therefore, a method that can automatically, quickly, and precisely detect activities of malware of all types are needed in present days.
+The number of cyberattacks has been growing recently.
+They often use malware as their tool, and their types have diversified in recent years.
+To minimize the impact of cyberattacks, it is important to ascertain the actual behaviors of malware on the Internet quickly and precisely.
+Many intrusion detection systems and firewalls have already implemented signature-based and/or whitelist/blacklist-based access control functions, but these cannot cope with unknown malware variants and brand-new malware.
+Network security operators or analysts may conduct a heuristic and rule-based analysis, but this is costly, and human error may occur.
+Accordingly, a method that can detect the activities of malware of all types automatically, quickly and precisely is now needed
 
 We focus on the detection of indiscriminate attacks, which do not have any specific targets and attack arbitrary hosts on the Internet.
-Malware's network scanning activity is a type of such attacks, and malware often performs this to locate attack targets.
-Since the scans are sent to arbitrary IP addresses, some of them may arrive at unused IP address spaces, i.e., darknet.
-To capture these scans, we set up receivers (sensors) in our darknet and captured all the traffic arriving at the sensors.
-Through the analysis of the traffic, we intend grasp what kind of network service was being targeted and the trend of global cyber attack.
-In this study, we work on a mechanism that automatically detects indiscriminate attacks reaching darknets like network scans from malware.
-The mechanism detects cyber attacks quickly and precisely including variants and unknown attacks by using an unsupervised machine learning method, so that there is no human error.
+Malware’s network scanning activity is one type of such attacks, and malware often performs it to locate attack targets.
+Since the scans are sent to arbitrary IP addresses, some of them may arrive at unused IP address spaces, i.e. a darknet.
+To capture these scans, we set up receivers (sensors) in our darknet and captured all the traﬃc arriving at the sensors.
+Through an analysis of the traffic, we intend to ascertain what kind of network service was being targeted and the trend of global cyberattacks.
+In this study, we work on a mechanism that automatically detects indiscriminate attacks reaching darknets, such as network scans from malware.
+This mechanism detects cyberattacks quickly and precisely, including variants and unknown attacks by using an unsupervised machine learning method, so that there is no human error.
 
 
-On our darknet, Internet-wide malware scans are observed as if they are coordinated or cooperatively working.
-In reality, we believe each infected host send scans independently, though there are still minor cases where command-and-control (C2) servers coordinate bots.
-Here, the difficulty lies in how we should distinguish the ill-intentioned packets from others; the darknet traffic includes not only ill-intentioned scans but also legitimate scans with research purposes and unintentionally sent packets due to device misconfiguration.
+On our darknet, Internet-wide malware scans are observed as if they are coordinated or working cooperatively.
+In reality, we believe that each infected host sends scans independently, although there are still minor cases where command-and-control (C2) servers coordinate bots.
+Here, the difficulty lies in how we should distinguish the ill-intentioned packets from others; darknet traffic includes not only ill-intentioned scans but also legitimate scans with research purposes and unintentionally sent packets due to device misconfiguration.
 %~\cite{Akiyama}
-Based on this observation, our earlier method~\cite{Han}, called ``{\it GLASSO} engine\footnote{The engine is named after the library of R language ``glasso''~\cite{Friedman_glasso}.},'' estimates the cooperativeness of the source hosts by using a sparse structure learning algorithm, called ``Graphical Lasso''~\cite{Friedman}.
-It also provides alerts when the estimated cooperativeness drastically changes; it can detect a campaign or a group of related activities by estimating the cooperativeness among many pairs of source hosts for each unit time and by finding outlier of cooperativeness among different unit times.
-This approach is robust to noise:  packets that accidentally arrive at our darknet space due to misconfigurations will not show cooperativeness.
-Moreover, this approach ignores activities with weak cooperativeness.
+Based on this observation, our earlier method~\cite{Han}, called the {\it GLASSO} engine\footnote{The engine is named after the library of R language ``glasso''~\cite{Friedman_glasso}.}, estimates the cooperation of the source hosts by using a sparse structure learning algorithm called the graphical lasso~\cite{Friedman}.
+It also provides alerts when the estimated cooperation changes significantly; it can detect a campaign or a group of related activities by estimating the cooperation among many pairs of source hosts for each unit time and by finding outliers of cooperation among different unit times.
+This approach is robust with regard to noise: packets that arrive accidentally in our darknet space due to misconfigurations will not show cooperation.
+Moreover, this approach ignores activities with weak cooperation.
 
 However, since the {\it GLASSO} engine in~\cite{Han} works in a batch mode and requires 3-day darknet traffic to process, the analysis result will not be provided in real-time and will be delayed by more than 3 days in the worst-case.
 Therefore, in this paper, we propose an online processing algorithm of {\it GLASSO} engine that extends our earlier method~\cite{Han}, making it possible to detect the outliers sequentially and in real-time.
