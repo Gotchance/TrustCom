@@ -141,7 +141,7 @@ From the above, the GGM graph using the precision matrix $\hat{\Sigma^{-1}}$ est
 
 \section{Related Work}
 Many studies using darknets have been carried out and have shown their usefulness for analyzing Internet-wide scanning.
-Dainotti {\it et al.} developed and evaluated a methodology for removing spoofed traffic from both darknets and live networks and contributed to supportting census-like analyses of IP address space utilization~\cite{Dainotti}.
+Dainotti {\it et al.} developed and evaluated a methodology for removing spoofed traffic from both darknets and live networks and contributed to supporting census-like analyses of IP address space utilization~\cite{Dainotti}.
 Durumeric {\it et al.} analyzed a large-scale darknet to investigate scanning activities and identified patterns in large horizontal scanning operations~\cite{Durumeric}.
 They also presented an analysis of the latest network scanning on the overall landscape, along with its influence, and countermeasures of the defender in detail.
 Fachkha {\it et al.} devised inference and characterization modules for extracting and analyzing cyber-physical systems (CPS) probing activities toward sufficient CPS protocols by correlating and analyzing the various dimensions of a large amount of darknet data~\cite{Fachkha}.
@@ -212,7 +212,7 @@ Finally, time slots corresponding to graph densities showing anomalously high va
 \section{{\it GLASSO} Engine (Online-mode)}
 In this section, we propose a novel {\it GLASSO} engine that analyzes darknet traffic in real-time.
 The engine contains an online processing algorithm and an alert judgment method.
-The input of the engine  the packet capture (PCAP) file of darknet traffic for $T$ seconds and other parameters, while the output is alert information generated from the PCAP files in the time slots classified as outliers.
+The input of the engine the packet capture (PCAP) file of darknet traffic for $T$ seconds and other parameters, while the output is alert information generated from the PCAP files in the time slots classified as outliers.
 The alert information includes the time stamp, the targeted destination TCP port number, the source IP addresses, and the number of addresses.
 The targeted TCP port refers to the TCP port with the largest number of source hosts that sent packets to a destination TCP port in that time slot.
 
@@ -463,7 +463,7 @@ However, since this paper covered the detection of malware activities, and spora
 Next, it could be assumed that 1,539 remaining alerts (47 remaining TCP ports) were network scans, since many source hosts sent packets to a specific TCP port of many destination IP addresses cooperatively.
 There were two kinds of network scans of SYN packet reaching the darknet: cyberattacks and survey scans.
 In the case of an alert by survey scanners, since the size of the source hosts tended to be smaller than an alert by cyberattacks, we focused on the size of the source hosts and considered dividing it into cyberattacks and survey scans.
-In many cases, a survey scanner could be found from the HTTP connection and a host name obtained by a reverse lookup of a source host IP address.
+In many cases, a survey scanner could be found from the HTTP connection and a hostname obtained by a reverse lookup of a source host IP address.
 If there was a high proportion of survey scanners among the alert's source hosts, that alert was considered to be an alert by survey scanners.
 As a result of examining alerts in which the survey scanners ratio exceeded 50\%, we decided that an alert whose size of source host was smaller than 20 was a survey scan, otherwise it was a cyberattack.
 Here, in the case of cyberattacks, the ratio of a survey scanner was about 20\% at most.
