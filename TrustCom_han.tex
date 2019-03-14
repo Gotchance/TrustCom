@@ -30,7 +30,7 @@
     \IEEEauthorblockA{\IEEEauthorrefmark{1}National Institute of Information and Communications Technology, Japan.
     \{han, takeshi\_takahashi, dai, ko-nakao\}@nict.go.jp}
     \IEEEauthorblockA{\IEEEauthorrefmark{2}Kyushu University, Japan.
-    \{tak\}@inf.kyushu-u.ac.jp}
+    \{kawakita, tak\}@inf.kyushu-u.ac.jp}
     \IEEEauthorblockA{\IEEEauthorrefmark{3}clwit Inc., Japan.
     \{shimamura\}@clwit.co.jp}
 }
@@ -50,7 +50,7 @@ In our evaluation, we measure the detection performance of the proposed method w
 \end{abstract}
 
 \begin{IEEEkeywords}
-Real-time malware activity detection, Darknet traffic analysis, Outlier detection, Cooperativeness.
+Real-time detection, Malware, Internet-wide scan, Darknet, Cooperativeness, Outlier detection.
 \end{IEEEkeywords}
 
 
@@ -66,20 +66,20 @@ Malware's network scanning activity is a type of such attacks, and malware often
 Since the scans are sent to arbitrary IP addresses, some of them may arrive at unused IP address spaces, i.e., darknet.
 To capture these scans, we set up receivers (sensors) in our darknet and captured all the traffic arriving at the sensors.
 Through the analysis of the traffic, we intend grasp what kind of network service was being targeted and the trend of global cyber attack.
-
-The difficulty lies in how we should distinguish the ill-intentioned packets from others; the darknet traffic includes not only ill-intentioned scans but also legitimate scans with research purposes and unintentionally sent packets due to device misconfiguration.
 In this study, we work on a mechanism that automatically detects indiscriminate attacks reaching darknets like network scans from malware.
-The mechanism detected cyber attacks quickly and precisely including variants and unknown attacks by using an unsupervised machine learning method, so that there is no human error.
+The mechanism detects cyber attacks quickly and precisely including variants and unknown attacks by using an unsupervised machine learning method, so that there is no human error.
+
 
 On our darknet, Internet-wide malware scans are observed as if they are coordinated or cooperatively working.
 In reality, we believe each infected host send scans independently, though there are still minor cases where command-and-control (C2) servers coordinate bots.
+Here, the difficulty lies in how we should distinguish the ill-intentioned packets from others; the darknet traffic includes not only ill-intentioned scans but also legitimate scans with research purposes and unintentionally sent packets due to device misconfiguration.
 %~\cite{Akiyama}
 Based on this observation, our earlier method~\cite{Han}, called ``{\it GLASSO} engine\footnote{The engine is named after the library of R language ``glasso''~\cite{Friedman_glasso}.},'' estimates the cooperativeness of the source hosts by using a sparse structure learning algorithm, called ``Graphical Lasso''~\cite{Friedman}.
 It also provides alerts when the estimated cooperativeness drastically changes; it can detect a campaign or a group of related activities by estimating the cooperativeness among many pairs of source hosts for each unit time and by finding outlier of cooperativeness among different unit times.
 This approach is robust to noise:  packets that accidentally arrive at our darknet space due to misconfigurations will not show cooperativeness.
 Moreover, this approach ignores activities with weak cooperativeness.
 
-However, since the {\it GLASSO} engine in~\cite{Han} works in a batch mode and requires 3-day darknet traffic to process, the analysis result will not be provided in real-time and will be delayed by more than 3 days.
+However, since the {\it GLASSO} engine in~\cite{Han} works in a batch mode and requires 3-day darknet traffic to process, the analysis result will not be provided in real-time and will be delayed by more than 3 days in the worst-case.
 Therefore, in this paper, we propose an online processing algorithm of {\it GLASSO} engine that extends our earlier method~\cite{Han}, making it possible to detect the outliers sequentially and in real-time.
 In our evaluation, we measure the detection performance of the proposed method with our proof-of-concept implementation to demonstrate its feasibility and effectiveness in terms of detecting the rise of new malware activities in real-time.
 For this evaluation, we manually prepared the list of malicious events and the port numbers they used; these events and port numbers should be identified by the proposed algorithm.
@@ -186,7 +186,7 @@ The cooperativeness of host pairs means that there is no cooperativeness with th
 
 
 \subsection{Algorithm of Batch-mode {\it GLASSO} Engine}
-We prepare darknet traffic observed over a long period of time (e.g. 3 days traffic) and divided traffic every $T$ seconds to create multiple time slots.
+We prepare darknet traffic observed over a long period of time (e.g. 3-day traffic) and divided traffic every $T$ seconds to create multiple time slots.
 At that time, we consider only SYN packets, TCP.
 Next, a data matrix $\bm{D}\in\mathbb{R}^{M \times N}$ is created for each time slot, and a sample covariance matrix $S\in\mathbb{R}^{N \times N}$ is obtained.
 The sample covariance matrix $S$ and a positive real number $r$ are input to the graphical lasso algorithm to obtain a sparsely estimated precision matrix ${(\hat{\Sigma^{-1}})}^{(r)}\in\mathbb{R}^{N \times N}$.
@@ -200,8 +200,8 @@ Finally, time slots corresponding to graph densities showing anomalously high va
 
 
 \subsection{Defects of Batch-mode {\it GLASSO} Engine}
-The batch mode {\it GLASSO} engine could detect anomalies of cooperativeness between source hosts and showed its usefulness, but it was necessary to prepare 3 days' darknet traffic data and processed at once.
-In other words, considering until the processing time, it would be delayed by 3 days or more until the result output, and the expected effect leading to prompt response would be low.
+The batch mode {\it GLASSO} engine could detect anomalies of cooperativeness between source hosts and showed its usefulness, but it was necessary to prepare 3-day darknet traffic data and processed at once.
+In other words, considering until the processing time, it would be delayed by 3 days or more until the result output in the worst-case, and the expected effect leading to prompt response would be low.
 Also, although there were multiple parameters in the {\it GLASSO} engine, it had not been evaluated on what basis the parameters were set.
 Finally, only a few results of outlier detection was mentioned as case studies and there was no evaluation using a ground truth; the verification of the method was insufficient.
 Therefore, in the rest of this paper, we would improve the defects mentioned above.
@@ -251,9 +251,9 @@ Here, $length()$ function get the length of vectors.
 \label{alg1}
 \begin{algorithmic}[1]
   \REQUIRE $t$ (a time slot), $M, r \in R ( = \{r_1, r_2, \cdots, r_s\} ), \bm{d}^{(r)}, K, \theta$\\
-  \ENSURE alerts or none
+  \ENSURE alerts or none (per while-loop)
 
-  \FOR{a time slot $t$ is updated newly}
+  \WHILE{a time slot $t$ is updated newly}
     \STATE preprocess a time slot $t$
     \STATE make $\bm{D}_t$ from a time slot $t$
     \STATE compute $S$ from $\bm{D}_t$
@@ -262,7 +262,7 @@ Here, $length()$ function get the length of vectors.
       \STATE compute $d_t^{(r)}$ from ${(\hat{\Sigma^{-1}})}_t^{(r)}$
       \STATE add $d_t^{(r)}$ to $\bm{d}^{(r)}$
       \IF{$length(\bm{d}^{(r)}) = K$}
-        \STATE run alert judgment method (Algorithm~\ref{alg2})
+        \STATE {\bf call} {\it alert-judgment-method($\bm{d}^{(r)}, K, \theta$)}
         \IF{there are $outliers$}
           \STATE collect alert information from $outliers$
           \STATE output alerts
@@ -272,7 +272,7 @@ Here, $length()$ function get the length of vectors.
         \ENDIF
   		\ENDIF
   	\ENDFOR
-  \ENDFOR
+  \ENDWHILE
 \end{algorithmic}
 \end{algorithm}
 %\end{subfigures*}
@@ -294,19 +294,23 @@ From the above, we understand how to process the {\it GLASSO} engine and how to 
 %\vspace{0.1cm}
 %\end{figure}
 \begin{algorithm}[tb]
-\caption{Pseudo code for Alert Judgment Method}
+\caption{Pseudo code for {\it alert-judgment-method}}
 \label{alg2}
 \begin{algorithmic}[1]
   \REQUIRE $\bm{d}\in\mathbb{R}^{K}, K, \theta$\\
   \ENSURE $outliers$ or none
 
-  \STATE $i \gets 0$
+  \STATE $i, j \gets 0$
   \WHILE{TRUE}
     \STATE $i \gets i + 1$
     \STATE $\bm{d}_{(i)} \gets order(\bm{d}, decreasing=True)[i:K]$
     \STATE $\sigma_{(i)}^2 \gets var(\bm{d}_{(i)})$
     \IF{$\sigma_{(i+1)}^2 / \sigma_{(i)}^2 < \theta$}
-      \STATE $outliers \gets order(\bm{d}, decreasing=True)[1:i]$
+      \STATE $j \gets j + 1$
+    \ELSIF{$i=1$}
+      \STATE {\bf break}
+    \ELSE
+      \STATE $outliers \gets order(\bm{d}, decreasing=True)[1:j]$
       \RETURN $outliers$
     \ENDIF
   \ENDWHILE
@@ -356,10 +360,10 @@ As a feature of $r$, $d^{(r)}$ generally gets closer to 1 as $r$ gets closer to 
 Also, as the value of $r$ is increased, the number of zero elements of a precision matrix estimated by the graphical lasso algorithm increases, so that a calculation time is shortened.
 Finally, $r$ can be tried multiple times with $R ( = \{r_1, r_2, \cdots, r_s\}\in\mathbb{R}^s)$, but a processing time of the {\it GLASSO} engine increases by the number of trials.
 
-We set the {\it GLASSO} engine to $T=600$ {\it (sec.)}, $M=12$ and fine-tune the value of $r$ to the decimal point six digits.
+We set the {\it GLASSO} engine to $T=600$ {\it (sec.)}, $M=12$ and fine-tune the value of $r$ to the decimal point 6 digits.
 Even when trying with varying values from 6 decimal places to 2 digits, the graph density value did not change significantly.
 For example, our experience shows that time slots that are alerted with $r=0.55$ are judged alert by $r=$0.5 or 0.6 in all cases.
-From this, we find out that it is sufficient to try while changing the value with one decimal place.
+From this, we find out that it is sufficient to try while changing the value with 1 decimal place.
 Also, there are many zero matrices from $r\geq 1$, which often result in $d^{(r)}=0$.
 And processing time takes longer for $r < 0.4$, that a sufficiently sparse precision matrix is not estimated, in most cases outliers do not come out.
 From the above, we finally decide to set $r \in R ( = \{0.4, 0.5, 0.6, 0.7, 0.8, 0.9\})$.
@@ -373,7 +377,7 @@ When $K$ is too small, data that can be referred to by the outlier detection met
 On the contrary, if $K$ is too big, it would be too stable and hard to detect outliers.
 However, this stability can also be adjusted with the threshold $\theta \, (0\leq \theta \leq 1)$ of the outlier judgment formula $\sigma^{2}_{(i+1)}/\sigma^{2}_{(i)}<\theta$.
 As $\theta$ approaches 1, the outlier is loosely judged, and as it is closer to 0, the outlier is strictly judged.
-We decided to use 3 days' data for outlier detection ($K=432$), $\theta$ is now set to 0.98 after trial and error.
+We decided to use 3-day data for outlier detection ($K=432$), $\theta$ is now set to 0.98 after trial and error.
 
 
 
@@ -396,11 +400,11 @@ This preprocessing should take place regularly.
 
 
 \subsection{Real-time Operation of {\it GLASSO} Engine}
-In this section, the results of the {\it GLASSO} engine which operated for 1 month in October 2018 were shown.
+In this section, the results of the {\it GLASSO} engine which operated for one month in October 2018 were shown.
 Input parameters of the {\it GLASSO} engine used for the operation were set to $T=600$ {\it (sec.)}, $M=12, K=432, \theta=0.98, r \in R ( = \{0.4, 0.5, 0.6, 0.7, 0.8, 0.9\})$.
 We considered only TCP-SYN packets and TCP ports 22, 23, 80, 81, 445, 2323, 3389, 5555, 8080, 50382, 50390, 52869 were excluded in the preprocessing phase.
 These TCP ports constantly received a large number of packets from various source hosts before September to October 1, 2018.
-Also, an IP address of source host is one IPv4 address up to the fourth octet, but in order to reduce the number of source hosts $N$, in this experiment, the IPv4 address up to the second octet was taken as one IP address.
+Also, although the IPv4 address of source host is 32 bits, in this experiment, the upper 16 bits of the IPv4 address are regarded as one IP address and the lower 16 bits are combined into one in order to reduce the number of source hosts $N$.
 We used 8 different darknet sensors and operated the {\it GLASSO} engine in real-time for each sensor.
 This darknet sensor observed with different IP address blocks, the IP address observation size and source country were also different.
 As a result of the operation, a total of 1,634 alerts were obtained in real-time without delay.
@@ -458,7 +462,7 @@ However, since this paper covered the detection of malware activities, and spora
 Next, it could be assumed that 1,539 remaining alerts (47 remaining TCP ports) were network scans since many source hosts sent packets to a specific TCP port of many destination IP address cooperatively.
 There were two kinds of network scans of SYN packet reaching the darknet: cyber attacks and survey scans.
 In the case of an alert by survey scanners, since a size of the source hosts tended to be smaller than an alert by cyber attacks, we focused on a size of the source hosts and considered dividing it into cyber attacks and survey scans.
-In many cases, a survey scanner could be found from HTTP connection and a hostname obtained by reverse lookup of a source host IP address.
+In many cases, a survey scanner could be found from HTTP connection and a host name obtained by reverse lookup of a source host IP address.
 If there was a high proportion of survey scanners among the alert's source hosts, that alert was considered to be an alert by survey scanners.
 As a result of examining alerts in which survey scanners ratio exceeded 50\%, we divided that an alert whose size of source host was smaller than 20 was a survey scan, otherwise, it was a cyber attack.
 Here, in the case of cyber attacks, the ratio of a survey scanner was about 20\% at most.
@@ -484,7 +488,7 @@ Table~\ref{tab:answer} shows TCP port information of true positive, false negati
 Since this limited answer table recorded only the attacked TCP port, that is, correct answer, there was no true negative in such evaluation.
 As a result, we got 31 true positives, 3 false negatives and 0 false positives of TCP ports.
 As shown in Table~\ref{tab:accuracy}, the performance of malware activity detection in October 2018 of the {\it GLASSO} engine was 91.2\% accuracy, 100\% precision, 91.2\% recall, and 95.4\% F-measure.
-Here, the four indicators used for performance evaluation, in which true negatives is not considered in comparison with the general indication.
+Here, 4 indicators used for performance evaluation, in which true negatives is not considered in comparison with the general indication.
 Also, there was one attacked TCP port detected only by the {\it GLASSO} engine in true positives (TCP port number 1701).
 It was a cyber attack event that we missed due to human error when making the answer table.
 Finally, please note that unknown attacks will be clarified in the future and false negatives may increase.
@@ -575,9 +579,9 @@ However, this measure may increase false positives.
 Next, if the number of source hosts is small, its cooperativeness will become thin and difficult to capture campaigns like TCP ports 444, 2004 by the {\it GLASSO} engine.
 As a countermeasure for such false negatives, considering a method that can increase the number of source hosts and a method that can capture cooperativeness between a small number of source hosts, the following three points are conceivable.
 \begin{enumerate}
-  \item Do not reduce the number of source hosts and make the IP addresses up to the fourth octet as one source host IP address.
+  \item Do not combine the lower 16 bits of IPv4 address.
   \item Use a larger IP address size of darknet sensors.
-  \item Frequently perform TCP port exclusion in the preprocessing.
+  \item Perform TCP port exclusion in the preprocessing often.
 \end{enumerate}
 
 
