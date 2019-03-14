@@ -321,31 +321,31 @@ From the above, we understand how to process the {\it GLASSO} engine and how to 
 
 
 \section{Parameter Tuning}
-The {\it GLASSO} engine has five important parameters, and we introduce how these five parameters are set in this section.
-These parameters are determined by an empirical heuristic method.
+The {\it GLASSO} engine has five important parameters, and we introduce the way these five parameters are set in this section.
+These parameters are determined using an empirical heuristic method.
 
 
 \subsection{Length of Time Slot $T$}
 The length of time slot $T$ {\it (sec.)} means the length of the entire observation time series of the data used for one model learning.
 First of all, we think from an upper bound of $T$.
-The computational complexity of the {\it GLASSO} engine depends greatly on the number of source hosts $N$.
-As $T$ becomes longer, the number of source hosts generally also increases, processing time increases exponentially, and real-time processing becomes difficult.
+The computational complexity of the {\it GLASSO} engine depends significantly on the number of source hosts $N$.
+As $T$ becomes longer, the number of source hosts generally also increases, the processing time increases polynomially, and real-time processing becomes difficult.
 Next, we consider a lower bound.
-It is sufficient if we can make rich observations such that all one campaign of network scan is observed in $T$ seconds.
+It is sufficient if we can make in-depth observations such that all of one campaign of a network scan is observed in $T$ seconds.
 From our experience, one campaign of many network scans observed at the maximum observation scale of the darknet sensor used in the GLASSO engine ends within 5 minutes (subnet /17).
-Therefore, we set to $T=600$ {\it (sec.)} which can process in real-time without problems and make rich observations.
+Accordingly, we set it to $T=600$ {\it (sec.)}, which can be processed in real time without problems, and make in-depth observations.
 
 
 
 \subsection{The Number of Time Series Samples $M$}
 The number of time series samples $M$ means the number of time series samples of data used for one model learning by dividing the time slot length $T$ into the number $M$.
 In other words, it has a meaning of adjusting the length of the sampling interval $T/M$ {\it (sec.)}.
-Generally, as the sampling interval is severely divided, a time series of the number of packets is measured more finely, and learning with good precision is performed.
-However, if the sampling interval is too short, there is a risk of estimating that there is no dependence between source hosts that originally work in cooperation.
-On the contrary, if the sampling interval is too long, there is a fear that it may be estimated there is cooperativeness between any source hosts.
-Therefore, it is necessary to set $M$ to an appropriate number, but it is difficult to find the optimum value.
-However, fortunately, the regularization coefficient $r$ introduced in the next section has the same function as this $M$.
-That is unless $M$ is set to an extreme number, it can be covered with the regularization coefficient $r$.
+Generally, since the sampling interval is strictly divided, the time series of the number of packets is measured more finely, and learning with good precision is performed.
+If the sampling interval is too short, however, there is a risk of estimating that there is no dependence between the source hosts that originally work in cooperation.
+In contrast, if the sampling interval is too long, there is concern that it may be estimated that there is cooperation between source hosts.
+Accordingly, it is necessary to set $M$ to an appropriate number, but it is difficult to find the optimum value.
+Fortunately, however, the regularization coefficient $r$ that is introduced in the next section has the same function as this $M$.
+That is, unless $M$ is set to an extreme number, it can be covered with the regularization coefficient $r$.
 Based on our experience, if the sampling interval $T/M$ is about 50 seconds, we can measure a sufficient time series of the number of packets, so we set $M=12$.
 
 
@@ -354,31 +354,31 @@ Based on our experience, if the sampling interval $T/M$ is about 50 seconds, we 
 
 \subsection{Regularization Coefficient $r$}
 The regularization coefficient $r\;(\geq 0)$ is an input parameter used in the graphical lasso algorithm.
-It is a hyperparameter to decide how much dependence is considered to be derived from the noise and adjusts a sparsity of an estimated precision matrix $\Sigma^{-1}$.
-Here, it is similarly meaningful between scrape down weakly related dependencies and more severely measures a time series of the number of packets.
-Therefore, $r$ and $M$ have similar roles.
-As a feature of $r$, $d^{(r)}$ generally gets closer to 1 as $r$ gets closer to 0, and $d^{(r)}$ gets closer to 0 as $r$ gets bigger.
-Also, as the value of $r$ is increased, the number of zero elements of a precision matrix estimated by the graphical lasso algorithm increases, so that a calculation time is shortened.
-Finally, $r$ can be tried multiple times with $R ( = \{r_1, r_2, \cdots, r_s\}\in\mathbb{R}^s)$, but a processing time of the {\it GLASSO} engine increases by the number of trials.
+It is a hyperparameter for deciding how much dependence is considered to be derived from the noise and adjusts the sparsity of an estimated precision matrix $\Sigma^{-1}$.
+Here, it is similarly meaningful between scrape-down weakly related dependencies, and it measures the time series of the number of packets more strictly.
+Accordingly, $r$ and $M$ have similar roles.
+As a feature of $r$, $d^{(r)}$ generally becomes closer to 1 as $r$ becomes closer to 0, and $d^{(r)}$ becomes closer to 0 as $r$ becomes larger.
+In addition, as the value of $r$ is increased, the number of zero elements of a precision matrix estimated by the graphical lasso algorithm increases, so that the calculation time is shortened.
+Finally, $r$ can be tried multiple times with $R ( = \{r_1, r_2, \cdots, r_s\}\in\mathbb{R}^s)$, but the processing time of the {\it GLASSO} engine increases by the number of trials.
 
-We set the {\it GLASSO} engine to $T=600$ {\it (sec.)}, $M=12$ and fine-tune the value of $r$ to the decimal point 6 digits.
-Even when trying with varying values from 6 decimal places to 2 digits, the graph density value did not change significantly.
+We set the {\it GLASSO} engine to $T=600$ {\it (sec.)}, $M=12$ and fine-tune the value of $r$ to six decimal places.
+Even when trying with varying values from six decimal places to two decimal places, the graph density value did not change significantly.
 For example, our experience shows that time slots that are alerted with $r=0.55$ are judged alert by $r=$0.5 or 0.6 in all cases.
-From this, we find out that it is sufficient to try while changing the value with 1 decimal place.
-Also, there are many zero matrices from $r\geq 1$, which often result in $d^{(r)}=0$.
-And processing time takes longer for $r < 0.4$, that a sufficiently sparse precision matrix is not estimated, in most cases outliers do not come out.
-From the above, we finally decide to set $r \in R ( = \{0.4, 0.5, 0.6, 0.7, 0.8, 0.9\})$.
+From this, we discover that it is sufficient to try while changing the value to one decimal place.
+In addition, there are many zero matrices from $r\geq 1$, which often result in $d^{(r)}=0$.
+The processing time also takes longer for $r < 0.4$, where a sufficiently sparse precision matrix is not estimated, and in most cases outliers do not emerge.
+From the above, we finally decided to set $r \in R ( = \{0.4, 0.5, 0.6, 0.7, 0.8, 0.9\})$.
 
 
 
 \subsection{The Number of Graph Densities $K$ and Threshold $\theta$ for Alert Judgment}
-The number of graph density values $K$ and the threshold $\theta$ used for alert judgment, as well as the relationship between $M$ and $r$, unless $K$ is set to an extreme number, it can be covered with $\theta$.
-The $K$ means the number of data used when detecting an outlier.
-When $K$ is too small, data that can be referred to by the outlier detection method is reduced, so the detection of outlier tends to be unstable.
-On the contrary, if $K$ is too big, it would be too stable and hard to detect outliers.
+The number of graph density values $K$ and the threshold $\theta$ are used for alert judgment, as well as the relationship between $M$ and $r$, and unless $K$ is set to an extreme number, it can be covered with $\theta$.
+$K$ means the amount of data used when detecting an outlier.
+When $K$ is too small, the data that can be referred to by the outlier detection method are reduced, so the detection of outliers tends to be unstable.
+In contrast, if $K$ is too large, it is too stable, making it difficult to detect outliers.
 However, this stability can also be adjusted with the threshold $\theta \, (0\leq \theta \leq 1)$ of the outlier judgment formula $\sigma^{2}_{(i+1)}/\sigma^{2}_{(i)}<\theta$.
-As $\theta$ approaches 1, the outlier is loosely judged, and as it is closer to 0, the outlier is strictly judged.
-We decided to use 3-day data for outlier detection ($K=432$), $\theta$ is now set to 0.98 after trial and error.
+As $\theta$ approaches 1, the outlier is judged loosely, and as it is closer to 0, the outlier is judged strictly.
+We decided to use three days' data for outlier detection ($K=432$), and $\theta$ is now set to 0.98 after trial and error.
 
 
 
