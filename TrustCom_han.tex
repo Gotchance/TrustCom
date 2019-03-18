@@ -235,7 +235,7 @@ Then, $d_t^{(r)}$ is added to a sequence of the past graph density value $\bm{d}
 If the length of $\bm{d}^{(r)}$ is less than $K$, we wait until the next time slot is updated without performing the alert judgment.
 The detailed alert judgment method is explained in the next section.
 The time slot judged as an outlier is output as an alert and is deleted from $\bm{d}$ so that it will not be referred to in a subsequent alert judgment.
-In addition, if no time slot is determined as an outlier, the oldest time slot is deleted from $\bm{d}$.
+In addition, if no time slot is determined as an outlier, the oldest time slot is deleted from $\bm{d}^{(r)}$.
 When time has passed and a new time slot is updated, by repeating the above steps, it is possible to sequentially process the {\it GLASSO} engine while maintaining the number of time slots used for alert judgment.
 As a result, it obtains the result in real time after a very short time compared to the batch mode, since only an updated time slot is processed.
 The pseudo code for the {\it GLASSO} engine with online processing is described in Algorithm~\ref{alg1}.
@@ -267,9 +267,9 @@ Here, the $length()$ function obtains the length of the vectors.
         \IF{there are $outliers$}
           \STATE collect alert information from $outliers$
           \RETURN alerts
-          \STATE remove $outliers$ from $\bm{d}$
+          \STATE delete $outliers$ from $\bm{d}$
         \ELSE
-          \STATE remove the most old time slot from $\bm{d}^{(r)}$
+          \STATE delete the oldest time slot from $\bm{d}^{(r)}$
         \ENDIF
   		\ENDIF
   	\ENDFOR
@@ -329,7 +329,7 @@ These parameters are determined using an empirical heuristic method.
 The length of time slot $T$ {\it (sec.)} means the length of the entire observation time series of the data used for one model learning.
 First of all, we think from an upper bound of $T$.
 The computational complexity of the {\it GLASSO} engine depends significantly on the number of source hosts $N$.
-As $T$ becomes longer, the number of source hosts generally also increases, the processing time increases polynomially, and real-time processing becomes difficult.
+As $T$ becomes longer, the number of source hosts generally also increases, the processing time increases polynomially in $N$, and real-time processing becomes difficult.
 Next, we consider a lower bound.
 It is sufficient if we can make in-depth observations such that all of one campaign of a network scan is observed in $T$ seconds.
 From our experience, one campaign of many network scans observed at the maximum observation scale of the darknet sensor used in the GLASSO engine ends within 5 minutes (subnet /17).
@@ -359,7 +359,7 @@ Here, it is similarly meaningful between scrape-down weakly related dependencies
 Accordingly, $r$ and $M$ have similar roles.
 As a feature of $r$, $d^{(r)}$ generally becomes closer to 1 as $r$ becomes closer to 0, and $d^{(r)}$ becomes closer to 0 as $r$ becomes larger.
 In addition, as the value of $r$ is increased, the number of zero elements of a precision matrix estimated by the graphical lasso algorithm increases, so that the calculation time is shortened.
-Finally, $r$ can be tried multiple times with $R ( = \{r_1, r_2, \cdots, r_s\}\in\mathbb{R}^s)$, but the processing time of the {\it GLASSO} engine increases by the number of trials.
+Finally, $r$ can be tried multiple times with $R ( = \{r_1, r_2, \cdots, r_s\}\subset [0,\infty))$, but the processing time of the {\it GLASSO} engine increases by the number of trials.
 
 We set the {\it GLASSO} engine to $T=600$ {\it (sec.)}, $M=12$ and fine-tune the value of $r$ to six decimal places.
 Even when trying with varying values from six decimal places to two decimal places, the graph density value did not change significantly.
@@ -486,13 +486,15 @@ We comprehensively looked at a range of information such as information containe
 We used the limited answer table to check the answer of attacked TCP ports detected in real time from the {\it GLASSO} engine.
 The results of the answers are shown in Table~\ref{tab:answer}.
 Table~\ref{tab:answer} shows the TCP port information of true positive, false negative and false positive according to three types of cyberattack.
-Since this limited answer table recorded only the attacked TCP port, that is, the correct answer, there was no true negative in the evaluation.
+This limited answer table recorded only definitely attacked TCP ports, that is, unknown attacked TCP ports may still remain.
+Accordingly, the true negative cannot be evaluated.
 As a result, we obtained 31 true positives, 3 false negatives and 0 false positives of TCP ports.
-As shown in Table~\ref{tab:accuracy}, the performance of malware activity detection in October 2018 of the {\it GLASSO} engine had 91.2\% accuracy, 100\% precision, 91.2\% recall, and 95.4\% F-measure.
-Here, four indicators were used for performance evaluation, in which true negatives are not considered in comparison with the general indication.
-In addition, there was one attacked TCP port detected only by the {\it GLASSO} engine in true positives (TCP port number 1701).
+There was one attacked TCP port detected only by the {\it GLASSO} engine in true positives (TCP port number 1701).
 It was a cyberattack event that we missed due to human error when creating the answer table.
-Finally, please note that unknown attacks will be clarified in the future, and false negatives may increase.
+As shown in Table~\ref{tab:accuracy}, the performance of malware activity detection in October 2018 of the {\it GLASSO} engine had 91.2\% accuracy, 100\% precision, 91.2\% recall, and 95.4\% F-measure.
+%Here, four indicators were used for performance evaluation, in which true negatives are not considered in comparison with the general indication.
+Please note that unknown attacks will be clarified in the future, and false negatives may increase.
+In addition, although the usual formula for accuracy is (\#TP+\#TN)/(\#TP+\#FP+\#FN+\#TN), we do not know the true negative, so it matches the formula for usual accuracy when \#TN is 0.
 
 \begin{table}[tb]
   \centering
@@ -504,7 +506,7 @@ Finally, please note that unknown attacks will be clarified in the future, and f
 \begin{tabular}[c]{@{}c@{}}IoT\\ Malware\end{tabular}   & \begin{tabular}[c]{@{}c@{}}82,83,84,85,88,2480,\\5358,5984,7547,8000,\\8088,8443,8888,9000\\(14 TCP ports)\end{tabular} & \begin{tabular}[c]{@{}c@{}}444,8010\\(2 TCP ports)\end{tabular} & None \\ \hline
 \begin{tabular}[c]{@{}c@{}}Router\\Vulnerability\end{tabular}   & \begin{tabular}[c]{@{}c@{}}21,110,443,5431,\\8001,8081,8181,8291,\\23023,37215,65000\\(11 TCP ports)\end{tabular}       & None                                                        & None \\ \hline
 \begin{tabular}[c]{@{}c@{}} Other\\Vulnerability\end{tabular} & \begin{tabular}[c]{@{}c@{}}1701,5379,5900,\\ 6379,7379,49152\\(6 TCP ports)\end{tabular}                                     & \begin{tabular}[c]{@{}c@{}}2004\\(1 TCP port)\end{tabular}        & None \\ \hline\hline
-Total  & 31  & 3  & 0   \\ \hline
+Total  & \#TP=31  & \#FN=3  & \#FP=0   \\ \hline
 \end{tabular}
 \end{table}
 
@@ -515,12 +517,11 @@ Total  & 31  & 3  & 0   \\ \hline
   \label{tab:accuracy}
 \begin{tabular}{c|c|c|c}
 \hline
-\begin{tabular}[c]{@{}c@{}}Accuracy\\$\bigl(=\frac{TP}{TP+FP+FN}\bigr)$\end{tabular} & \begin{tabular}[c]{@{}c@{}}Precision\\$\bigl(=\frac{TP}{TP+FP}\bigr)$\end{tabular} & \begin{tabular}[c]{@{}c@{}}Recall\\$\bigl(=\frac{TP}{TP+FN}\bigr)$\end{tabular} & \begin{tabular}[c]{@{}c@{}}F-measure\\ $\bigl(=\frac{2TP}{2TP+FP+FN}\bigr)$ \end{tabular} \vspace{0.1cm}\\  \hline\hline
+\begin{tabular}[c]{@{}c@{}}Accuracy\\$\bigl(=\frac{{\rm \#TP}}{{\rm
+\#TP+\#FP+\#FN}}\bigr)$\end{tabular} & \begin{tabular}[c]{@{}c@{}}Precision\\ $\bigl(=\frac{{\rm \#TP}}{{\rm \#TP+\#FP}}\bigr)$\end{tabular} & \begin{tabular}[c]{@{}c@{}}Recall\\ $\bigl(=\frac{{\rm \#TP}}{{\rm \#TP+\#FN}}\bigr)$ \end{tabular} & \begin{tabular}[c]{@{}c@{}}F-measure\\ $\bigl(=\frac{{\rm 2\#TP}}{{\rm 2\#TP+\#FP+\#FN}}\bigr)$ \end{tabular} \vspace{0.1cm}\\  \hline\hline
 91.2\%                                                   & 100\%                                                     & 91.2\%                                                 & 95.4\%                                                   \\ \hline
 \end{tabular}
 \end{table}
-
-
 
 
 
