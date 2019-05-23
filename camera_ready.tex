@@ -122,7 +122,7 @@ This paper offers the following contributions:
   \item We evaluated the detection performance of malware activities using the limited ground truth.
   This paper is the first and practical evaluation of the detection performance of malware activities on the darknet, and we explained the details of the detected malware activities.
   Finally, we considered some countermeasures against several malware activities that the \textit{GLASSO} engine missed. (Discussed in Sections~\ref{Performance},~\ref{Details}, and~\ref{Consideration})
-  \item We published datasets used for performance evaluation in this paper on the web\footnote{http://csdataset.nict.go.jp/darknet}: data matrices $\bm{D}_t$ introduced in Section~\ref{Data} and the alert results in Section~\ref{Operation}.
+  \item We published datasets used for performance evaluation in this paper on the web\footnote{https://csdataset.nict.go.jp/darknet}: data matrices $\bm{D}_t$ introduced in Section~\ref{Data} and the alert results in Section~\ref{Operation}.
 \end{enumerate}
 
 
@@ -143,7 +143,7 @@ In this paper, a network scan that has indiscriminately attempted attacks and in
 
 \subsection{Graphical Gaussian Model}
 A graphical Gaussian model (hereinafter, GGM) is a probabilistic model for which a graph expresses the dependence structure between random variables given a multivariate Gaussian distribution.
-To measure the dependency structure between random variables, one may obtain correlation coefficients, but it may include a spurious correlation between random variables.
+To measure the dependency structure between random variables, one may obtain correlation coefficients, but it may include spurious correlations between random variables.
 To address this issue, there is a method of obtaining a precision matrix $\Sigma^{-1}$ (the inverse of the covariance matrix $\Sigma$) from which the conditional independence of a pair of random variables can be measured~\cite{Ide}.
 If and only if $(\Sigma^{-1})_{ij}=0$, then $x_ {i}$ and $x_ {j}$ are independent, conditioned on all the other variables.
 The definition of the graph in the GGM using the precision matrix $\Sigma^{-1}\in\mathbb{R}^{N \times N}$ of a sequence of random variables following an $N$-dimensional multivariate Gaussian distribution is as follows: $N$ random variables correspond to the nodes, and if a matrix element of $(\Sigma^{-1})_{ij}$ is zero, there is no edge between variables $x_i$ and $x_j$, and if a matrix element is nonzero, there is an edge between variables $x_i$ and $x_j$.
@@ -230,7 +230,7 @@ Finally, time slots corresponding to graph densities showing anomalously high va
 In this section, we propose a novel \textit{GLASSO} engine that analyzes darknet traffic in real time.
 The engine contains an online processing algorithm and an alert judgment method.
 The input of the engine the packet capture (PCAP) file of darknet traffic for $T$ seconds and other parameters, while the output is alert information generated from the PCAP files in the time slots classified as outliers.
-The alert information includes the time stamp, the targeted destination TCP port number, the source IP addresses, and the number of addresses.
+The alert information includes the timestamp, the targeted destination TCP port number, the source IP addresses, and the number of addresses.
 The targeted TCP port refers to the TCP port with the largest number of source hosts that sent packets to a destination TCP port in that time slot.
 
 
@@ -414,7 +414,7 @@ Table~\ref{tab:sensor} shows the number of observed IP addresses and alerts for 
   \centering
     \caption{Number of Observed IP Addresses and Alerts for Each Darknet Sensor}
   \begin{tabular}{c|c|c||c|c|c} \hline
-  Sensor & \begin{tabular}[c]{@{}c@{}}Observed\\IP Address\end{tabular} &  Alerts & Sensor & \begin{tabular}[c]{@{}c@{}}Observed\\IP Address\end{tabular} & Alerts \\ \hline\hline
+  Sensor & \begin{tabular}[c]{@{}c@{}}\#Observed\\IP Address\end{tabular} &  \#Alerts & Sensor & \begin{tabular}[c]{@{}c@{}}\#Observed\\IP Address\end{tabular} & \#Alerts \\ \hline\hline
 
   A & 29,182 & 122 & E & 8,188 & 198 \\ \hline
   B & 14,593 & 199 & F & 16,384 & 115 \\ \hline
@@ -469,8 +469,8 @@ If there was a high proportion of survey scanners among the alert's source hosts
 As a result of examining alerts in which the survey scanners ratio exceeded 50\%, we decided that an alert whose size of source host was smaller than 20 was a survey scan; otherwise, it was a cyberattack.
 Here, in the case of cyberattacks, the ratio of a survey scanner was about 20\% at most.
 Finally, we divided remaining alerts into 57 survey scans (16 TCP ports) and 1,482 cyberattacks (31 TCP ports).
-In order to facilitate analysis, in this evaluation, all alerts for ports that were obtained as attacks even once were all counted as cyberattacks.
-Please note that some of the alerts classified as cyberattacks included survey scans.
+To facilitate analysis, in this evaluation, all alerts for ports that were obtained as cyberattacks even once were all counted as cyberattacks.
+It means some of the alerts classified as cyberattacks included survey scans.
 Table~\ref{tab:result_type} shows the result of dividing all alerts obtained during October 2018 into three types for each TCP port.
 
 
@@ -591,7 +591,7 @@ We made limited ground truth by manual analysis, with which we evaluated the mal
 Moreover, the engine detected anomalous events that could not have been detected using the conventional method.
 Although the engine suffers from some false negatives, we believe that these could be alleviated by preparing the environment properly.
 Accordingly, we conclude that the proposed \textit{GLASSO} engine can automatically and precisely ascertain indiscriminate cyberattacks like network scans in real time.
-Datasets which we used in this paper are available online at \url{http://csdataset.nict.go.jp/darknet}
+Datasets which we used in this paper are available online at \url{https://csdataset.nict.go.jp/darknet}
 
 This work is to be improved further.
 First, the \textit{GLASSO} engine could be optimized further to reduce false negatives.
