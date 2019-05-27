@@ -38,6 +38,8 @@
 \renewcommand{\algorithmicensure}{\textbf{Output:}}
 
 
+
+
 \begin{document}
 
 \title{
@@ -45,11 +47,11 @@
 }
 
 \author{
-    \IEEEauthorblockN{Chansu Han\IEEEauthorrefmark{1}\IEEEauthorrefmark{2}, Jumpei Shimamura\IEEEauthorrefmark{3}, Takeshi Takahashi\IEEEauthorrefmark{1}, Daisuke Inoue\IEEEauthorrefmark{1}, Masanori Kawakita\IEEEauthorrefmark{2}, \\Jun'ichi Takeuchi\IEEEauthorrefmark{2}\IEEEauthorrefmark{1}, and Koji Nakao\IEEEauthorrefmark{1}}
+    \IEEEauthorblockN{Chansu Han\IEEEauthorrefmark{1}$^{,}$\IEEEauthorrefmark{2}, Jumpei Shimamura\IEEEauthorrefmark{3}, Takeshi Takahashi\IEEEauthorrefmark{1}, Daisuke Inoue\IEEEauthorrefmark{1}, Masanori Kawakita\IEEEauthorrefmark{2}, \\Jun'ichi Takeuchi\IEEEauthorrefmark{2}$^{,}$\IEEEauthorrefmark{1}, and Koji Nakao\IEEEauthorrefmark{1}}
     \IEEEauthorblockA{\IEEEauthorrefmark{1}National Institute of Information and Communications Technology, Japan.
     \{han, takeshi\_takahashi, dai, ko-nakao\}@nict.go.jp}
     \IEEEauthorblockA{\IEEEauthorrefmark{2}Kyushu University, Japan.
-    \{kawakita, tak\}@inf.kyushu-u.ac.jp}
+    \{kawakita, tak\}@inf.kyushu-u.ac.jp}\thanks{\IEEEauthorrefmark{2}The current affiliate of M. Kawakita is Nagoya University, Japan.}
     \IEEEauthorblockA{\IEEEauthorrefmark{3}clwit Inc., Japan.
     \{shimamura\}@clwit.co.jp}
 }
@@ -118,11 +120,11 @@ This paper offers the following contributions:
   It was possible to detect outliers with a very short span compared to earlier work and obtain alert results in real time. (Discussed in Section~\ref{GLASSO})
 	\item We tuned important parameters in the \textit{GLASSO} engine. (Discussed in Section~\ref{Parameter})
 	\item We operated the \textit{GLASSO} engine in real time using live darknet traffic (raw packets) and obtained detection results without delay.
-  We also analyzed the detection results by destination TCP ports (by services). (Discussed in Sections~\ref{Operation} and~\ref{Analysis})
+  We also analyzed the detection results by observing destination TCP ports (services) of the involved packets. (Discussed in Sections~\ref{Operation} and~\ref{Analysis})
   \item We evaluated the detection performance of malware activities using the limited ground truth.
   This paper is the first and practical evaluation of the detection performance of malware activities on the darknet, and we explained the details of the detected malware activities.
   Finally, we considered some countermeasures against several malware activities that the \textit{GLASSO} engine missed. (Discussed in Sections~\ref{Performance},~\ref{Details}, and~\ref{Consideration})
-  \item We published datasets used for performance evaluation in this paper on the web\footnote{https://csdataset.nict.go.jp/darknet}: data matrices $\bm{D}_t$ introduced in Section~\ref{Data} and the alert results in Section~\ref{Operation}.
+  \item We published datasets used for performance evaluation in this paper on the web\footnote{https://csdataset.nict.go.jp/darknet}: data matrices $\bm{D}$ introduced in Section~\ref{Data} and the alert results in Section~\ref{Operation}.
 \end{enumerate}
 
 
@@ -146,19 +148,19 @@ A graphical Gaussian model (hereinafter, GGM) is a probabilistic model for which
 To measure the dependency structure between random variables, one may obtain correlation coefficients, but it may include spurious correlations between random variables.
 To address this issue, there is a method of obtaining a precision matrix $\Sigma^{-1}$ (the inverse of the covariance matrix $\Sigma$) from which the conditional independence of a pair of random variables can be measured~\cite{Ide}.
 If and only if $(\Sigma^{-1})_{ij}=0$, then $x_ {i}$ and $x_ {j}$ are independent, conditioned on all the other variables.
-The definition of the graph in the GGM using the precision matrix $\Sigma^{-1}\in\mathbb{R}^{N \times N}$ of a sequence of random variables following an $N$-dimensional multivariate Gaussian distribution is as follows: $N$ random variables correspond to the nodes, and if a matrix element of $(\Sigma^{-1})_{ij}$ is zero, there is no edge between variables $x_i$ and $x_j$, and if a matrix element is nonzero, there is an edge between variables $x_i$ and $x_j$.
+The definition of the graph in the GGM using the precision matrix $\Sigma^{-1}\in\mathbb{R}^{N \times N}$ of a sequence of random variables following an $N$-dimensional multivariate Gaussian distribution is as follows: $N$ random variables correspond to the nodes, and if an element $(\Sigma^{-1})_{ij}$ is zero, there is no edge between variables $x_i$ and $x_j$, and if the element is nonzero, there is an edge between variables $x_i$ and $x_j$.
 In other words, the graph in GGM using this precision matrix shows the conditional independence of all pairs of random variables.
 
 
 
 \subsection{Graphical Lasso}
-The maximum-likelihood estimation of a precision matrix $\Sigma^{-1}$ is the inverse matrix of the sample covariance matrix $S$.
-We expect the precision matrix $\Sigma^{-1}$ to be a sparse matrix such that variable pairs with essential dependencies take nonzero values and perhaps weakly related variable pairs with noise take zero.
-In general, however, the elements of the sample covariance matrix $S$ cannot be strictly zero, and the empirical precision matrix $S^{-1}$ is also not generally sparse.
-Accordingly, the graphical lasso, which is a sparse structure learning algorithm, optimizes a precision matrix by solving a penalized maximum-likelihood equation with $\ell_1$ regularization term in one column (one row) and estimates a sparse precision matrix $\hat{\Sigma^{-1}}$ without explicit inverse matrix calculation~\cite{Friedman}.
+The maximum-likelihood estimate of a precision matrix $\Sigma^{-1}$ is the inverse of the sample covariance matrix $S$.
+We expect the precision matrix $\Sigma^{-1}$ to be a sparse matrix such that for the variable pairs with essential dependencies the corresponding elements are nonzero and for the weakly related variable pairs the corresponding elements are zero.
+In general, however, the elements of the inverse of the sample covariance matrix $S$ cannot be strictly zero.
+Accordingly, the graphical lasso, which is a sparse structure learning algorithm, optimizes a precision matrix by solving a penalized maximum-likelihood equation with $\ell_1$ regularization term $r\sum_{ij}|\Sigma^{-1}_{ij}|$~\cite{Friedman}.
 The input arguments of the graphical lasso algorithm are the sample covariance matrix $S$ and the $\ell_1$ regularization coefficient $r\;(\geq 0)$.
 Here, $r$ is a hyperparameter for deciding how much dependency is regarded as noise-derived, and it is possible to adjust the sparsity of the precision matrix to be estimated.
-From the above, the GGM graph using the precision matrix $\hat{\Sigma^{-1}}$ estimated by the graphical lasso algorithm expresses the more essential dependencies of all variable pairs than the maximum-likelihood estimation of the precision matrix.
+From the above, the GGM graph using the precision matrix $\hat{\Sigma^{-1}}$ estimated by the graphical lasso algorithm expresses the more essential dependencies of all variable pairs than the maximum-likelihood estimate of the precision matrix.
 
 
 
@@ -189,38 +191,39 @@ Although this variable is never expressed as a Gaussian distribution, it can be 
 Besides, if the variables do not completely comply with a Gaussian distribution but can be approximated to some extent, dependency relationships between the variables in the GGM could be ascertained.
 
 First, we considered how to process the dataset of darknet traffic.
-Darknet traffic for $T$ seconds used for one model learning is called a time slot.
-We assumed that there were $N$ source hosts in a time slot $t$.
+The term of $T$ seconds of which darknet traffic is an object of one model learning is called a time slot.
+Also, let $X_t$ be a set of packet data included in the $t$-th time slot.
+We call $X$ a time slot dataset.
+We assumed that there were $N$ source hosts in the $X_t$.
 Time series data were generated by counting the number of packets observed at a certain sampling interval for each source host.
 Here, if the number of time series samples is $M$, the sampling interval is $T/M$ \textit{(sec.)}.
-We then convert from the time slot $t$ to a data matrix
+We then convert from the $X_t$ to a data matrix
 \begin{equation*}
-\bm{D}_t=[D_{mn}]\in\mathbb{R}^{M \times N},
+D_t=[D_{mn}]\in\mathbb{R}^{M \times N},
 \;\;D_{mn} := \log(x_n^{(m)}),
 \;\;\bm{x}^{(m)}\in\mathbb{N}_0^{N}.
 \end{equation*}
-Here, $\bm{x}^{(m)}$ means $N$-dimensional variables of the number of samples $M$, and $x_n^{(m)}$ represents the number of packets at the $m$-th point of the $n$-th source host.
+Here, $\bm{x}^{(m)}$ denotes $N$-dimensional variables of the number of samples $M$, and $x_n^{(m)}$ denotes the number of packets at the $m$-th point of the $n$-th source host.
 In addition, $\mathbb{N}_0=\{0,1,2,\cdots\}$.
 Since log-transformation cannot be performed when $x_n^{(m)}=0$; we add a small real number $0.1$.
 
-Next, we obtain a precision matrix from the data matrix $\bm{D}_t$ using the graphical lasso algorithm and apply the GGM.
+Next, we obtain a precision matrix from the data matrix $D_t$ using the graphical lasso algorithm and apply the GGM.
 A set of source hosts (variable) then corresponds to a node set of a graph in the GGM, and the presence or absence of a dependence relationship (cooperativeness) of a source host pair (variable pair) corresponds to an edge set.
-The degree of cooperation of host pairs means that there is no cooperation with that host pair when the time series of the number of packets received from each source host is conditionally independent between two hosts.
 
 
 
 
 \subsection{Algorithm of Batch-mode \textit{GLASSO} Engine}
 \label{Batch}
-We prepare darknet traffic observed over a long period (e.g., three days' traffic) and divided traffic every $T$ seconds to create multiple time slots.
+We prepare darknet traffic observed over a long period (e.g., three days' traffic) and divided traffic every $T$ seconds to make datasets of multiple time slots $\bm{X}$.
 At that time, we consider only SYN packets, TCP.
-Next, a data matrix $\bm{D}\in\mathbb{R}^{M \times N}$ is created for each time slot, and a sample covariance matrix $S\in\mathbb{R}^{N \times N}$ is obtained.
-The sample covariance matrix $S$ and a positive real number $r$ are input to the graphical lasso algorithm to obtain a sparsely estimated precision matrix ${(\hat{\Sigma^{-1}})}^{(r)}\in\mathbb{R}^{N \times N}$.
+Next, data matrices $\bm{D}$ are created for $\bm{X}$, and sample covariance matrices $\bm{S}$ is obtained.
+Sample covariance matrices $\bm{S}$ and a positive real number $r$ are input to the graphical lasso algorithm to obtain a sparsely estimated precision matrices ${\bm{(\hat{\Sigma^{-1}})}}^{(r)}$.
 Here, we try some positive real numbers like $r \in R ( = \{r_1, r_2, \cdots, r_s\} \subset [0,\infty))$.
-From the estimated precision matrix, an undirected graph $G = \{V, E\}$ in the GGM could be represented by node set $V=\{x_{1}, \cdots, x_{N}\}$ and edge set $E=\{(i,j)|{(\hat{\Sigma^{-1}})}_{ij}\neq0\}$.
-Then, in order to express the degree of cooperation between all pairs of source hosts in each time slot with scalar values, we obtain a graph density value $d^{(r)}=|E|/N(N-1)$ for each time slot.
+From each estimated precision matrix, an undirected graph $G = \{V, E\}$ in the GGM could be represented by node set $V=\{x_{1}, \cdots, x_{N}\}$ and edge set $E=\{(i,j)|{(\hat{\Sigma^{-1}})}_{ij}\neq0\}$.
+Then, in order to express the degree of cooperation between all pairs of source hosts in each time slot dataset with scalar values, we obtain a graph density value $d^{(r)}=|E|/N(N-1)$ for each time slot dataset.
 The graph density value represents the ratio of the actual number of edges to the number of edges of the complete graph.
-Finally, time slots corresponding to graph densities showing anomalously high values compared to all graph density values are determined using outlier detection techniques.
+Finally, time slot datasets corresponding to graph densities showing anomalously high values compared to all graph density values are determined using outlier detection techniques.
 
 
 
@@ -229,21 +232,21 @@ Finally, time slots corresponding to graph densities showing anomalously high va
 \label{GLASSO}
 In this section, we propose a novel \textit{GLASSO} engine that analyzes darknet traffic in real time.
 The engine contains an online processing algorithm and an alert judgment method.
-The input of the engine the packet capture (PCAP) file of darknet traffic for $T$ seconds and other parameters, while the output is alert information generated from the PCAP files in the time slots classified as outliers.
+The input of the engine the packet capture (PCAP) file of darknet traffic for $T$ seconds and other parameters, while the output is alert information generated from the PCAP files in the time slot datasets classified as outliers.
 The alert information includes the timestamp, the targeted destination TCP port number, the source IP addresses, and the number of addresses.
-The targeted TCP port refers to the TCP port with the largest number of source hosts that sent packets to a destination TCP port in that time slot.
+The targeted TCP port refers to the TCP port with the largest number of source hosts that sent packets to a destination TCP port in that time slot dataset.
 
 
 \subsection{Online Processing Algorithm}
-We consider a method of outputting alerts (outliers) sequentially by processing every time slot, rather than by processing multiple time slots at once.
-First, the newest time slot $t$ is processed in the same manner as Section~\ref{Batch} to obtain a graph density value $d_t^{(r)}$.
-Then, $d_t^{(r)}$ is added to a sequence of the past graph density value $\bm{d}^{(r)}$, and if the length of $\bm{d}^{(r)}$ is an arbitrary positive integer $K$, alert judgment (outlier detection) is performed.
-If the length of $\bm{d}^{(r)}$ is less than $K$, we wait until the next time slot is updated without performing the alert judgment.
+We consider a method of outputting alerts (outliers) sequentially by processing every time slot dataset, rather than by processing multiple time slot datasets at once.
+First, the newest time slot dataset $X$ is processed in the same manner as in Section~\ref{Batch} to obtain a graph density value $d^{(r)}$.
+Then, $d^{(r)}$ is added to a sequence of the past graph density value $\bm{d}^{(r)}$, and if the length of $\bm{d}^{(r)}$ is an arbitrary positive integer $K$, alert judgment (outlier detection) is performed.
+If the length of $\bm{d}^{(r)}$ is less than $K$, we wait until the next time slot dataset is updated without performing the alert judgment.
 The detailed alert judgment method is explained in the next section.
-The time slot judged as an outlier is output as an alert and is deleted from $\bm{d}$ so that it will not be referred to in a subsequent alert judgment.
-In addition, if no time slot is determined as an outlier, the oldest time slot is deleted from $\bm{d}^{(r)}$.
-When the time has passed and a new time slot is updated, by repeating the above steps, it is possible to sequentially process the \textit{GLASSO} engine while maintaining the number of time slots used for alert judgment.
-As a result, it obtains the result in real time after a very short time compared to the batch mode, since only an updated time slot is processed.
+The time slot dataset judged as an outlier is output as an alert and is deleted from $\bm{d}$ so that it will not be referred to in a subsequent alert judgment.
+In addition, if no time slot dataset is determined as an outlier, the oldest time slot dataset is deleted from $\bm{d}^{(r)}$.
+When the time has passed and a new time slot dataset is updated, by repeating the above steps, it is possible to sequentially process the \textit{GLASSO} engine while maintaining the number of time slot datasets used for alert judgment.
+As a result, it obtains the result in real time after a very short time compared to the batch mode, since only an updated time slot dataset is processed.
 The pseudo code for the \textit{GLASSO} engine with online processing is described in Algorithm~\ref{alg1}.
 Here, the $length()$ function obtains the length of the vectors.
 
@@ -252,17 +255,17 @@ Here, the $length()$ function obtains the length of the vectors.
 \caption{\textit{GLASSO} Engine with Online Processing}
 \label{alg1}
 \begin{algorithmic}[1]
-  \REQUIRE $t$ (a time slot), $M, r \in R ( = \{r_1, r_2, \cdots, r_s\} ), \bm{d}^{(r)}, K, \theta$\\
+  \REQUIRE $X$, $M, r \in R ( = \{r_1, r_2, \cdots, r_s\} ), \bm{d}^{(r)}, K, \theta$\\
   \ENSURE alerts or none (per while-loop)
 
-  \WHILE{a time slot $t$ is updated newly}
-    \STATE preprocess a time slot $t$
-    \STATE make $\bm{D}_t$ from a time slot $t$
-    \STATE compute $S_t$ from $\bm{D}_t$
+  \WHILE{$X$ is updated newly}
+    \STATE preprocess $X$
+    \STATE make $D$ from $X$
+    \STATE compute $S$ from $D$
   	\FOR{$r$ in $R$}
-      \STATE compute ${(\hat{\Sigma^{-1}})}_t^{(r)}$ using the \textit{glasso($S_t,r$)}
-      \STATE compute $d_t^{(r)}$ from ${(\hat{\Sigma^{-1}})}_t^{(r)}$
-      \STATE add $d_t^{(r)}$ to $\bm{d}^{(r)}$
+      \STATE compute ${(\hat{\Sigma^{-1}})}^{(r)}$ using the \textit{glasso($S,r$)}
+      \STATE compute $d^{(r)}$ from ${(\hat{\Sigma^{-1}})}^{(r)}$
+      \STATE add $d^{(r)}$ to $\bm{d}^{(r)}$
       \IF{$length(\bm{d}^{(r)}) = K$}
         \STATE \textbf{call} \textit{\textbf{alert-judgment-method($\bm{d}^{(r)}, K, \theta$)}}
         \IF{there are $outliers$}
@@ -270,7 +273,7 @@ Here, the $length()$ function obtains the length of the vectors.
           \RETURN alerts
           \STATE delete $outliers$ from $\bm{d}$
         \ELSE
-          \STATE delete the oldest time slot from $\bm{d}^{(r)}$
+          \STATE delete the oldest time slot dataset from $\bm{d}^{(r)}$
         \ENDIF
   		\ENDIF
   	\ENDFOR
@@ -323,7 +326,7 @@ The \textit{GLASSO} engine has five important parameters, and we introduce the w
 These parameters are determined using an empirical heuristic method.
 
 
-\subsection{Length of Time Slot $T$}
+\subsection{Length $T$ of Time Slot}
 The length of time slot $T$ \textit{(sec.)} means the length of the entire observation time series of the data used for one model learning.
 First of all, we think from an upper bound of $T$.
 The computational complexity of the \textit{GLASSO} engine depends significantly on the number of source hosts $N$.
@@ -339,8 +342,8 @@ Accordingly, we set it to $T=600$ \textit{(sec.)}, which can be processed in rea
 The number of time series samples $M$ means the number of time series samples of data used for one model learning by dividing the time slot length $T$ into the number $M$.
 In other words, it has a meaning of adjusting the length of the sampling interval $T/M$ \textit{(sec.)}.
 Generally, since the sampling interval is strictly divided, the time series of the number of packets is measured more finely, and learning with good precision is performed.
-If the sampling interval is too short, however, there is a risk of estimating that there is no dependence between the source hosts that originally work in cooperation.
-In contrast, if the sampling interval is too long, there is a concern that it may be estimated that there is cooperation between source hosts.
+If the sampling interval is too short, however, there is a risk of estimating that there is no dependence between the source hosts that originally work in cooperation (false negatives).
+In contrast, if the sampling interval is too long, the number of false positives may increase.
 Accordingly, it is necessary to set $M$ to an appropriate number, but it is difficult to find the optimum value.
 Fortunately, however, the regularization coefficient $r$ that is introduced in the next section has the same function as this $M$.
 That is, unless $M$ is set to an extreme number, it can be covered with the regularization coefficient $r$.
@@ -352,16 +355,16 @@ Based on our experience, if the sampling interval $T/M$ is about 50 seconds, we 
 
 \subsection{Regularization Coefficient $r$}
 The regularization coefficient $r\;(\geq 0)$ is an input parameter used in the graphical lasso algorithm.
-It is a hyperparameter for deciding how much dependence is considered to be derived from the noise and adjusts the sparsity of an estimated precision matrix $\Sigma^{-1}$.
-Here, it is similarly meaningful between scrape-down weakly related dependencies, and it measures the time series of the number of packets more strictly.
-Accordingly, $r$ and $M$ have similar roles.
+It is a hyperparameter to decide how much dependence is considered to be derived from the noise and adjusts the sparsity of the estimate of precision matrix $\Sigma^{-1}$.
+In other words, by adjusting r, it is possible to scrape-down weakly related dependencies and reduce the number of false positives of dependency estimation.
+Based on this perspective, $r$ and $M$ have similar roles.
 As a feature of $r$, $d^{(r)}$ generally becomes closer to 1 as $r$ becomes closer to 0, and $d^{(r)}$ becomes closer to 0 as $r$ becomes larger.
 In addition, as the value of $r$ is increased, the number of zero elements of a precision matrix estimated by the graphical lasso algorithm increases, so that the calculation time is shortened.
 Finally, $r$ can be tried multiple times with $R ( = \{r_1, r_2, \cdots, r_s\}\subset [0,\infty))$, but the processing time of the \textit{GLASSO} engine increases by the number of trials.
 
 We set the \textit{GLASSO} engine to $T=600$ \textit{(sec.)}, $M=12$ and fine-tune the value of $r$ to six decimal places.
 Even when trying with varying values from six decimal places to two decimal places, the graph density value did not change significantly.
-For example, our experience shows that time slots that are alerted with $r=0.55$ are judged alert by $r=$0.5 or 0.6 in all cases.
+For example, our experience shows that time slot datasets that are alerted with $r=0.55$ are judged alert by $r=$0.5 or 0.6 in all cases.
 From this, we discover that it is sufficient to try while changing the value to one decimal place.
 In addition, there are many zero matrices from $r\geq 1$, which often result in $d^{(r)}=0$.
 The processing time also takes longer for $r < 0.4$, where a sufficiently sparse precision matrix is not estimated, and outliers do not emerge in most cases.
@@ -469,7 +472,7 @@ If there was a high proportion of survey scanners among the alert's source hosts
 As a result of examining alerts in which the survey scanners ratio exceeded 50\%, we decided that an alert whose size of source host was smaller than 20 was a survey scan; otherwise, it was a cyberattack.
 Here, in the case of cyberattacks, the ratio of a survey scanner was about 20\% at most.
 Finally, we divided remaining alerts into 57 survey scans (16 TCP ports) and 1,482 cyberattacks (31 TCP ports).
-To facilitate analysis, in this evaluation, all alerts for ports that were obtained as cyberattacks even once were all counted as cyberattacks.
+To facilitate analysis, in this evaluation, all alerts for the ports that were obtained as cyberattacks even once were all counted as cyberattacks.
 It means some of the alerts classified as cyberattacks included survey scans.
 Table~\ref{tab:result_type} shows the result of dividing all alerts obtained during October 2018 into three types for each TCP port.
 
@@ -566,7 +569,7 @@ Scans with the features of Mirai were observed of TCP port numbers 444 and 8010,
 Looking at the number of source hosts for 10 minutes by each darknet sensor, 161 source hosts were observed when TCP port 8010 was at the peak, while TCP ports 444 and 2004 were observed with 19 and 23 source hosts at most.
 
 
-First of all, the reason why we missed TCP port 8010 is because of handling only TCP ports with the largest number of source hosts in outlier time slots as alerts.
+First of all, the reason why we missed TCP port 8010 is because of handling only TCP ports with the largest number of source hosts in outlier time slot datasets as alerts.
 TCP port 8010 can be easily detected if it is considered as an alert, even for the TCP port that has the second and the subsequent largest number of source hosts.
 However, this measure may increase the number of false positives.
 
@@ -604,7 +607,9 @@ Through this work, we hope to streamline security operations and reduce the burd
 
 
 \section*{Acknowledgment}
-The authors wish to thank Associate Prof. K. Yoshioka from Yokohama National University and  Prof. N. Murata from Waseda University for their valuable comments.
+{\small The authors wish to thank Associate Prof. K. Yoshioka from Yokohama National University and  Prof. N. Murata from Waseda University for their valuable comments.
+This research was partially supported by JSPS KAKENHI Grant Number 18H03291.}
+
 
 
 \begin{thebibliography}{99}
