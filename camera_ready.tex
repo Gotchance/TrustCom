@@ -217,9 +217,9 @@ A set of source hosts (variable) then corresponds to a node set of a graph in th
 \label{Batch}
 We prepare darknet traffic observed over a long period (e.g., three days' traffic) and divided traffic every $T$ seconds to make datasets of multiple time slots $\bm{X}$.
 At that time, we consider only SYN packets, TCP.
-Next, data matrices $\bm{D}$ are created for $\bm{X}$, and sample covariance matrices $\bm{S}$ is obtained.
-Sample covariance matrices $\bm{S}$ and a positive real number $r$ are input to the graphical lasso algorithm to obtain a sparsely estimated precision matrices ${\bm{(\hat{\Sigma^{-1}})}}^{(r)}$.
-Here, we try some positive real numbers like $r \in R ( = \{r_1, r_2, \cdots, r_s\} \subset [0,\infty))$.
+Next, data matrices $\bm{D}$ are created for $\bm{X}$, and sample covariance matrices $\bm{S}$ are obtained.
+Sample covariance matrices $\bm{S}$ and a positive real number $r$ are input to the graphical lasso algorithm to obtain a sparsely estimated precision matrices ${(\bm{\hat{\Sigma^{-1}}})}^{(r)}$.
+Here, we try some positive real numbers like $r \in R \, ( \, = \{r_1, r_2, \cdots, r_s\} \subset [0,\infty))$.
 From each estimated precision matrix, an undirected graph $G = \{V, E\}$ in the GGM could be represented by node set $V=\{x_{1}, \cdots, x_{N}\}$ and edge set $E=\{(i,j)|{(\hat{\Sigma^{-1}})}_{ij}\neq0\}$.
 Then, in order to express the degree of cooperation between all pairs of source hosts in each time slot dataset with scalar values, we obtain a graph density value $d^{(r)}=|E|/N(N-1)$ for each time slot dataset.
 The graph density value represents the ratio of the actual number of edges to the number of edges of the complete graph.
@@ -233,21 +233,22 @@ Finally, time slot datasets corresponding to graph densities showing anomalously
 In this section, we propose a novel \textit{GLASSO} engine that analyzes darknet traffic in real time.
 The engine contains an online processing algorithm and an alert judgment method.
 The input of the engine the packet capture (PCAP) file of darknet traffic for $T$ seconds and other parameters, while the output is alert information generated from the PCAP files in the time slot datasets classified as outliers.
-The alert information includes the timestamp, the targeted destination TCP port number, the source IP addresses, and the number of addresses.
+The alert information includes the timestamp, the targeted destination TCP port, the source IP addresses, and the number of addresses.
 The targeted TCP port refers to the TCP port with the largest number of source hosts that sent packets to a destination TCP port in that time slot dataset.
 
 
 \subsection{Online Processing Algorithm}
 We consider a method of outputting alerts (outliers) sequentially by processing every time slot dataset, rather than by processing multiple time slot datasets at once.
+Let $K$ be an arbitrary positive integer.
 First, the newest time slot dataset $X$ is processed in the same manner as in Section~\ref{Batch} to obtain a graph density value $d^{(r)}$.
-Then, $d^{(r)}$ is added to a sequence of the past graph density value $\bm{d}^{(r)}$, and if the length of $\bm{d}^{(r)}$ is an arbitrary positive integer $K$, alert judgment (outlier detection) is performed.
-If the length of $\bm{d}^{(r)}$ is less than $K$, we wait until the next time slot dataset is updated without performing the alert judgment.
+Then, $d^{(r)}$ is added to a sequence of the past graph density value $\bm{d}^{(r)}$, and if the length of $\bm{d}^{(r)}$ equals $K$, an alert judgment (outlier detection) is performed.
+If the length of $\bm{d}^{(r)}$ is less than $K$, we wait until the next time slot dataset is updated without performing an alert judgment.
 The detailed alert judgment method is explained in the next section.
 The time slot dataset judged as an outlier is output as an alert and is deleted from $\bm{d}$ so that it will not be referred to in a subsequent alert judgment.
-In addition, if no time slot dataset is determined as an outlier, the oldest time slot dataset is deleted from $\bm{d}^{(r)}$.
+In addition, if no time slot dataset is determined as an outlier, the oldest $d^{(r)}$ is deleted from $\bm{d}^{(r)}$.
 When the time has passed and a new time slot dataset is updated, by repeating the above steps, it is possible to sequentially process the \textit{GLASSO} engine while maintaining the number of time slot datasets used for alert judgment.
 As a result, it obtains the result in real time after a very short time compared to the batch mode, since only an updated time slot dataset is processed.
-The pseudo code for the \textit{GLASSO} engine with online processing is described in Algorithm~\ref{alg1}.
+The pseudocode for the \textit{GLASSO} engine with online processing is described in Algorithm~\ref{alg1}.
 Here, the $length()$ function obtains the length of the vectors.
 
 
@@ -255,7 +256,7 @@ Here, the $length()$ function obtains the length of the vectors.
 \caption{\textit{GLASSO} Engine with Online Processing}
 \label{alg1}
 \begin{algorithmic}[1]
-  \REQUIRE $X$, $M, r \in R ( = \{r_1, r_2, \cdots, r_s\} ), \bm{d}^{(r)}, K, \theta$\\
+  \REQUIRE $X, M, r \in R \, ( \, = \{r_1, r_2, \cdots, r_s\} ), \bm{d}^{(r)}, K, \theta$\\
   \ENSURE alerts or none (per while-loop)
 
   \WHILE{$X$ is updated newly}
@@ -273,29 +274,27 @@ Here, the $length()$ function obtains the length of the vectors.
           \RETURN alerts
           \STATE delete $outliers$ from $\bm{d}$
         \ELSE
-          \STATE delete the oldest time slot dataset from $\bm{d}^{(r)}$
+          \STATE delete the oldest $d^{(r)}$ from $\bm{d}^{(r)}$
         \ENDIF
   		\ENDIF
   	\ENDFOR
   \ENDWHILE
 \end{algorithmic}
+\caption{\textit{GLASSO} Engine with Online Processing}
 \end{algorithm}
 
 
 
-
-
 \subsection{Alert Judgment Method for Online Processing}
-In this section, we propose an outlier detection method for differentiating alerts (outliers) from a sequence of graph density values $\bm{d}$ during online processing.
-It is checked how much the largest element occupies a total sample variance in the sequence of graph density values $\bm{d}$, and when the ratio is large, the largest element is judged to be an outlier.
-The pseudo code of the alert judgment method is indicated in Algorithm~\ref{alg2}.
-Here, $\sigma^{2}_{(i+1)}/\sigma^{2}_{(i)}<\theta$ is an outlier judgment formula, and $\theta \, (0\leq \theta \leq 1)$ is a threshold value of an outlier judgment formula.
-In addition, the $order()$ function returns a permutation that rearranges its first argument into ascending or descending order, and the $var()$ function returns a sample variance.
-From the above, we understand how to process the \textit{GLASSO} engine and how to output alerts.
+In this section, we propose an outlier detection method for a sequence of graph density values $\bm{d}$ during online processing.
+It checks how much the largest element occupies a total sample variance in $\bm{d}$, and when the largest element exceeds a criterion of an outlier judgment formula, it is judged as an outlier.
+The pseudocode of the alert judgment method is shown in Algorithm~\ref{alg2}.
+Here, $\sigma^{2}_{(i+1)}/\sigma^{2}_{(i)}<\theta$ is an outlier judgment formula, and $\theta \, (0\leq \theta \leq 1)$ is a threshold value.
+In addition, the $order()$ function returns a permutation that rearranges its first argument into descending order, and the $var()$ function returns a sample variance.
 
 
 \begin{algorithm}[tb]
-\caption{Pseudo code for \textit{alert-judgment-method}}
+\caption{\textit{alert-judgment-method}}
 \label{alg2}
 \begin{algorithmic}[1]
   \REQUIRE $\bm{d}\in\mathbb{R}^{K}, K, \theta$\\
@@ -304,14 +303,14 @@ From the above, we understand how to process the \textit{GLASSO} engine and how 
   \STATE $i, j \gets 0$
   \WHILE{TRUE}
     \STATE $i \gets i + 1$
-    \STATE $\bm{d}_{(i)} \gets order(\bm{d}, decreasing=True)[i:K]$
+    \STATE $\bm{d}_{(i)} \gets order(\bm{d})[i:K]$
     \STATE $\sigma_{(i)}^2 \gets var(\bm{d}_{(i)})$
     \IF{$\sigma_{(i+1)}^2 / \sigma_{(i)}^2 < \theta$}
       \STATE $j \gets j + 1$
     \ELSIF{$i=1$}
       \STATE \textbf{break}
     \ELSE
-      \STATE $outliers \gets order(\bm{d}, decreasing=True)[1:j]$
+      \STATE $outliers \gets order(\bm{d})[1:j]$
       \RETURN $outliers$
     \ENDIF
   \ENDWHILE
@@ -322,30 +321,30 @@ From the above, we understand how to process the \textit{GLASSO} engine and how 
 
 \section{Parameter Tuning}
 \label{Parameter}
-The \textit{GLASSO} engine has five important parameters, and we introduce the way these five parameters are set in this section.
-These parameters are determined using an empirical heuristic method.
+The \textit{GLASSO} engine has five important parameters, and we introduce a heuristic way to set these five parameters.
 
 
 \subsection{Length $T$ of Time Slot}
 The length of time slot $T$ \textit{(sec.)} means the length of the entire observation time series of the data used for one model learning.
-First of all, we think from an upper bound of $T$.
-The computational complexity of the \textit{GLASSO} engine depends significantly on the number of source hosts $N$.
-As $T$ takes longer, the number of source hosts generally also increases, the processing time increases polynomially in $N$, and real-time processing becomes difficult.
-Next, we consider a lower bound.
+First of all, we consider upper bounds of $T$.
+The computational cost of the \textit{GLASSO} engine depends significantly on the number of source hosts $N$.
+As $T$ becomes longer, the number of source hosts generally also increases, the processing time increases polynomially in $N$, and real-time processing becomes difficult.
+Next, we consider lower bounds.
 It is sufficient if we can make in-depth observations such that all of one campaign of a network scan is observed in $T$ seconds.
-From our experience, one campaign of many network scans observed at the maximum observation scale of the darknet sensor used in the \textit{GLASSO} engine ends within 5 minutes (subnet /17).
-Accordingly, we set it to $T=600$ \textit{(sec.)}, which can be processed in real time without problems, and make in-depth observations.
+From our experience, one campaign of many network scans was observed at the maximum observation scale of the darknet sensor used in the \textit{GLASSO} engine ends within 5 minutes (subnet /17).
+Accordingly, we set it to $T=600$ \textit{(sec.)}, which can be properly processed in real time, and make in-depth observations.
 
 
 
 \subsection{The Number of Time Series Samples $M$}
-The number of time series samples $M$ means the number of time series samples of data used for one model learning by dividing the time slot length $T$ into the number $M$.
+The symbol $M$ denotes the number of time series samples used for one model learning, which is obtained by dividing the time slot length $T$ into $M$ sections.
 In other words, it has a meaning of adjusting the length of the sampling interval $T/M$ \textit{(sec.)}.
-Generally, since the sampling interval is strictly divided, the time series of the number of packets is measured more finely, and learning with good precision is performed.
-If the sampling interval is too short, however, there is a risk of estimating that there is no dependence between the source hosts that originally work in cooperation (false negatives).
-In contrast, if the sampling interval is too long, the number of false positives may increase.
-Accordingly, it is necessary to set $M$ to an appropriate number, but it is difficult to find the optimum value.
-Fortunately, however, the regularization coefficient $r$ that is introduced in the next section has the same function as this $M$.
+Here, when $T/M$ is small, the statistical model to denote the number of packets in the time slot is complex and powerful to describe the data.
+In contrast, when $T/M$ is large, the model is too simple to describe the data properly.
+It means that there are certain appropriate values of $M$.
+We could solve this issue as a problem of statistical model selection.
+However, we solve the problem in another way.
+Note that the regularization coefficient $r$ that is discussed in the next section has the similar function as $M$.
 That is, unless $M$ is set to an extreme number, it can be covered with the regularization coefficient $r$.
 Based on our experience, if the sampling interval $T/M$ is about 50 seconds, we can measure a sufficient time series of the number of packets, so we set $M=12$.
 
@@ -355,45 +354,44 @@ Based on our experience, if the sampling interval $T/M$ is about 50 seconds, we 
 
 \subsection{Regularization Coefficient $r$}
 The regularization coefficient $r\;(\geq 0)$ is an input parameter used in the graphical lasso algorithm.
-It is a hyperparameter to decide how much dependence is considered to be derived from the noise and adjusts the sparsity of the estimate of precision matrix $\Sigma^{-1}$.
-In other words, by adjusting r, it is possible to scrape-down weakly related dependencies and reduce the number of false positives of dependency estimation.
-Based on this perspective, $r$ and $M$ have similar roles.
+It is a hyperparameter to determine how much dependence is considered and adjusts the sparsity of the estimate of precision matrix $\Sigma^{-1}$.
+In other words, by tuning $r$, it is possible to scrape-down weakly related dependencies and reduce the number of false positives of dependency estimation.
+Based on this perspective, we see that $r$ and $M$ have similar roles.
 As a feature of $r$, $d^{(r)}$ generally becomes closer to 1 as $r$ becomes closer to 0, and $d^{(r)}$ becomes closer to 0 as $r$ becomes larger.
-In addition, as the value of $r$ is increased, the number of zero elements of a precision matrix estimated by the graphical lasso algorithm increases, so that the calculation time is shortened.
-Finally, $r$ can be tried multiple times with $R ( = \{r_1, r_2, \cdots, r_s\}\subset [0,\infty))$, but the processing time of the \textit{GLASSO} engine increases by the number of trials.
+In addition, as $r$ is increased, the number of zero elements of a precision matrix estimated by the graphical lasso algorithm increases, so that the calculation time is shortened.
+Finally, $r$ can be tried multiple times with $R \, ( \, = \{r_1, r_2, \cdots, r_s\}\subset [0,\infty))$, but the processing time of the \textit{GLASSO} engine increases by the number of trials.
 
-We set the \textit{GLASSO} engine to $T=600$ \textit{(sec.)}, $M=12$ and fine-tune the value of $r$ to six decimal places.
-Even when trying with varying values from six decimal places to two decimal places, the graph density value did not change significantly.
-For example, our experience shows that time slot datasets that are alerted with $r=0.55$ are judged alert by $r=$0.5 or 0.6 in all cases.
+We set the \textit{GLASSO} engine's parameter as $T=600$ \textit{(sec.)}, $M=12$ and examine which value of $r$ is appropriate.
+First, even when we try with varying values from six decimal places to two decimal places, the graph density value does not change significantly.
+For example, our experience shows that time slot datasets, which are alerted with $r=0.55$, are judged alert by $r=$0.5 or 0.6 in all cases.
 From this, we discover that it is sufficient to try while changing the value to one decimal place.
 In addition, there are many zero matrices from $r\geq 1$, which often result in $d^{(r)}=0$.
 The processing time also takes longer for $r < 0.4$, where a sufficiently sparse precision matrix is not estimated, and outliers do not emerge in most cases.
-From the above, we finally decided to set $r \in R ( = \{0.4, 0.5, 0.6, 0.7, 0.8, 0.9\})$.
+From the above, we finally decided to set $r \in R \, ( \, = \{0.4, 0.5, 0.6, 0.7, 0.8, 0.9\})$.
 
 
 
 \subsection{The Number of Graph Densities $K$ and Threshold $\theta$ for Alert Judgment}
-The number of graph density values $K$ and the threshold $\theta$ are used for alert judgment, as well as the relationship between $M$ and $r$, and unless $K$ is set to an extreme number, it can be covered with $\theta$.
-$K$ means the amount of data used when detecting an outlier.
-When $K$ is too small, the data that can be referred to by the outlier detection method are reduced, so the detection of outliers tends to be unstable.
-In contrast, if $K$ is too large, it is too stable, making it difficult to detect outliers.
-However, this stability can also be adjusted with the threshold $\theta \, (0\leq \theta \leq 1)$ of the outlier judgment formula $\sigma^{2}_{(i+1)}/\sigma^{2}_{(i)}<\theta$.
+The number of graph density values $K$ and the threshold $\theta$ are used for alert judgment.
+In general, the precision of outlier detection improves as the number of data increases.
+However, in the case of time-series data that changes rapidly depending on the time, the precision may decrease as the number of data increases.
+That is, it is necessary to select $K$ appropriately, as well as the relationship between $M$ and $r$, unless $K$ is set to an extreme number, it can be covered with $\theta$.
+The $\theta \, (0\leq \theta \leq 1)$ is the threshold of the outlier judgment formula $\sigma^{2}_{(i+1)}/\sigma^{2}_{(i)}<\theta$.
 As $\theta$ approaches 1, the outlier is judged loosely, and as it is closer to 0, the outlier is judged strictly.
-We decided to use three days' data for outlier detection ($K=432$), and $\theta$ is now set to 0.98 after trial and error.
-
+Based on our experience, we determined to use three days' data for outlier detection ($K=432$), and $\theta$ is now set to 0.98 after trial and error.
 
 
 \section{Performance Evaluation}
 In this section, we evaluate the performance of our \textit{GLASSO} engine.
-First, to improve the performance of the \textit{GLASSO} engine, we exclude packets that are outside our interests at the preprocessing stage without estimating the cooperation between source hosts.
-Next, we actually operated the \textit{GLASSO} engine in real time and analyzed the detected alert results.
-Finally, we evaluated the performance of malware activity detection and described the details of the detected malware activities.
-Here, although there is a possibility that a slight deterioration in performance may have occurred compared with the batch mode due to online processing, the method that cannot be detected in real time has no practicality and there is no fundamental difference in the method, so the comparative evaluation is omitted.
+To improve its performance, we exclude packets that are outside our interests at the preprocessing stage without estimating the cooperation between source hosts.
+We actually operated the \textit{GLASSO} engine in real time and analyzed the detected alert results.
+Finally, we evaluated its performance for malware activity detection and described the details of the detected malware activities.
+Here, although there is a possibility that a slight deterioration in performance may have occurred compared with the batch mode due to the modification for online processing, the batch mode has no practicality, and there is no fundamental difference in the methodology compared with the online mode, so the comparative evaluation is omitted.
 
 
 \subsection{Data Preprocessing}
-We pre-exclude destination TCP ports that constantly receive a large number of packets and source hosts for a long time (e.g., more than one week).
-In addition, packets addressed to TCP ports that are intensively observed as alerts are excluded.
+We pre-exclude the destination TCP ports that constantly receive a large number of packets and source hosts for a long time (e.g., more than one week).
+In addition, packets addressed to the TCP ports that are intensively observed as alerts are excluded.
 If such packets are included in the model learning of the \textit{GLASSO} engine, they will massively increase the indicator of cooperation among the source hosts to be estimated, and there is a concern that smaller but essential cooperation may be overlooked.
 Such packets that have an adverse effect on model learning and that are not interested should be regarded as noise and excluded.
 In addition, the number of source hosts is reduced to some extent, which leads to the shortening of processing time.
@@ -404,8 +402,8 @@ This preprocessing should take place on a regular basis.
 \subsection{Real-time Operation of \textit{GLASSO} Engine}
 \label{Operation}
 In this section, the results of the \textit{GLASSO} engine, which operated for one month in October 2018, are shown.
-The input parameters of the \textit{GLASSO} engine used for the operation were set to $T=600$ \textit{(sec.)}, $M=12, K=432, \theta=0.98, r \in R ( = \{0.4, 0.5, 0.6, 0.7, 0.8, 0.9\})$.
-We considered only TCP-SYN packets, and TCP ports 22, 23, 80, 81, 445, 2323, 3389, 5431, 5555, 8080, 50382, 50390, and 52869 were excluded in the preprocessing phase.
+The input parameters of the \textit{GLASSO} engine used for the operation were set to $T=600$ \textit{(sec.)}, $M=12$, $K=432$, $\theta=0.98$, $r \in R \, ( \, = \{0.4, 0.5, 0.6, 0.7, 0.8, 0.9\})$.
+We considered only the TCP-SYN packets, and the TCP ports 22, 23, 80, 81, 445, 2323, 3389, 5431, 5555, 8080, 50382, 50390, and 52869 were excluded in the preprocessing phase.
 These TCP ports constantly received a large number of packets from various source hosts before September to October 1, 2018.
 In addition, although the IPv4 address of a source host is 32 bits, in this experiment, the upper 16 bits of the IPv4 address is regarded as one IP address, and the lower 16 bits are combined into one in order to reduce the number of source hosts $N$.
 We used eight different darknet sensors and operated the \textit{GLASSO} engine in real time for each sensor.
@@ -445,28 +443,29 @@ Alert Type    & TCP ports (Number of Alerts, First Detected Date) \\ \hline\hlin
 
 \subsection{Analysis of Alert Result}
 \label{Analysis}
-By analyzing the alerts obtained from the \textit{GLASSO} engine for one month in October 2018 for each TCP port, a total of 128 TCP ports were obtained among 1,634 alerts, and these were broadly classified into the following three types.
+By analyzing the alerts obtained from the \textit{GLASSO} engine for one month in October 2018 for each TCP port, 128 TCP ports were obtained among the total 1,634 alerts, and these were broadly classified into the following three types.
 \begin{enumerate}
-  \item Cyberattack: a network scan that indiscriminately attempted attacks and intrusions through vulnerable TCP ports in order for multiple hosts already infected with malware to search for the next infection target.
-  \item Survey scan: a network scan that indiscriminately attempted surveys and research on TCP ports using multiple hosts by organizations such as Shodan, Censys, etc.
-  \item sporadically-focused traffic: a phenomenon in which packets were suddenly concentrated from multiple source hosts to one darknet destination IP address and a TCP port for some reason.
+  \item Cyberattacks: network scans that indiscriminately attempted attacks and intrusions through vulnerable TCP ports in order for multiple hosts already infected with malware to search for the next infection targets.
+  \item Survey scans: network scans that indiscriminately attempted surveys and research on TCP ports using multiple hosts by organizations such as Shodan, Censys, etc.
+  \item Sporadically-focused traffic: a phenomenon in which packets were suddenly concentrated from multiple source hosts to one darknet destination IP address and a TCP port for some reason.
 \end{enumerate}
 Please note that multiple source hosts in an alert cooperated or coordinated with each other anomalously, and the following describes how the alerts were divided into three types as above.
 
 
-A sporadically-focused traffic type means packets were concentrated from many source hosts to a specific destination IP address, clearly differing from the other two types that scan a wide range of destination IP addresses.
-In other words, there was no inclusive relationship between the sporadically-focused traffic type and the other two types.
-When both of the following two ratios were greater than 70\% in the alerts, the alert was judged as sporadically-focused traffic: (1) The ratio of the number of packets of the destination most received and the total number of packets, (2) The ratio of the number of source hosts of destinations where the source host was most frequently observed and the total number of source hosts.
-As a result of applying this criterion to all alerts, 95 out of a total of 1,634 alerts were found to be sporadically-focused traffic, and 81 out of a total of 128 alerts were divided into sporadically-focused traffic.
+A sporadically-focused traffic type means a number of packets concentrate to many source hosts to a specific destination IP address and a specific TCP port in a short time.
+It is clearly different from the other two types that scan a wide range of destination IP addresses.
+In other words, there is no inclusive relationship between the sporadically-focused traffic type and the other two types.
+When the ratio of the number of packets and source hosts reaching a single destination host was huge among the alerts, the alert was judged as sporadically-focused traffic.
+As a result, 95 alerts out of the total 1,634 alerts were found to be sporadically-focused traffic, and 81 TCP ports out of the total 128 TCP ports were classified as sporadically-focused traffic.
 
-At this time, we could not ascertain with our darknet precisely what sporadically-focused traffic was intended traffic, and we could only make weak guesses that there was a possibility of a routing mistake.
+At this time, we could not ascertain with our darknet precisely what sporadically-focused traffic was intended traffic, but it could not seem as malware activities; so, we could only make weak guesses that there was a possibility of a routing mistake.
 However, since this paper covered the detection of malware activities, and sporadically-focused traffic did not seem to be a campaign originating from malware, sporadically-focused traffic was not considered.
 
 
 Next, it could be assumed that 1,539 remaining alerts (47 remaining TCP ports) were network scans since many source hosts sent packets to a specific TCP port of many destination IP addresses cooperatively.
 There were two kinds of network scans of SYN packet reaching the darknet: cyberattacks and survey scans.
-In the case of an alert by survey scanners, since the size of the source hosts tended to be smaller than an alert by cyberattacks, we focused on the size of the source hosts and considered dividing it into cyberattacks and survey scans.
-In many cases, a survey scanner could be found from the HTTP connection and a hostname obtained by a reverse lookup of a source host IP address.
+In the case of an alert by survey scanners, since the number of the involved source hosts tended to be smaller than an alert by cyberattacks, we divided the obtained alerts into cyberattacks and survey scans based on the number of the involved hosts in each alert.
+In many cases, a survey scanner could be found with the HTTP connection and a hostname obtained by a reverse lookup of a source host IP address.
 If there was a high proportion of survey scanners among the alert's source hosts, that alert was considered to be an alert by survey scanners.
 
 As a result of examining alerts in which the survey scanners ratio exceeded 50\%, we decided that an alert whose size of source host was smaller than 20 was a survey scan; otherwise, it was a cyberattack.
@@ -474,13 +473,13 @@ Here, in the case of cyberattacks, the ratio of a survey scanner was about 20\% 
 Finally, we divided remaining alerts into 57 survey scans (16 TCP ports) and 1,482 cyberattacks (31 TCP ports).
 To facilitate analysis, in this evaluation, all alerts for the ports that were obtained as cyberattacks even once were all counted as cyberattacks.
 It means some of the alerts classified as cyberattacks included survey scans.
-Table~\ref{tab:result_type} shows the result of dividing all alerts obtained during October 2018 into three types for each TCP port.
+Table~\ref{tab:result_type} shows the result of dividing all alerts obtained during October 2018 into three types for each port.
 
 
 
 \subsection{Performance Evaluation of Malware Activity Detection}
 \label{Performance}
-From the previous section, it was possible to divide 31 attacked TCP ports out of all \textit{GLASSO} engine alerts in October 2018.
+By the discussion in the previous section, it was possible to extract 31 attacked TCP ports out of all \textit{GLASSO} engine alerts in October 2018.
 In this section, we measured the detection performance of how many of the 31 TCP ports were correct.
 In order to confirm the correct/incorrect answer, we manually created an answer table of attacked TCP ports in our darknet in October 2018 as far as we knew in December 2018.
 We comprehensively looked at a range of information such as information contained in SYN packets, vulnerability reports, threat intelligence services, security reports, and we determined the correct answer.
@@ -491,10 +490,10 @@ Table~\ref{tab:answer} shows the TCP port information of true positive, false ne
 This limited answer table recorded only definitely attacked TCP ports, that is, unknown attacked TCP ports may remain.
 Accordingly, the true negative cannot be evaluated.
 As a result, we obtained 31 true positives, 3 false negatives, and 0 false positives of TCP ports.
-There was one attacked TCP port detected only by the \textit{GLASSO} engine in true positives (TCP port number 1701).
+There was one attacked TCP port detected only by the \textit{GLASSO} engine in true positives (TCP port 1701).
 It was a cyberattack event that we missed due to human error when creating the answer table.
 As shown in Table~\ref{tab:accuracy}, the performance of malware activity detection in October 2018 of the \textit{GLASSO} engine had 91.2\% accuracy, 100\% precision, 91.2\% recall, and 95.4\% F-measure.
-Please note that unknown attacks will be clarified in the future, and false negatives may increase.
+Note that unknown attacks will be clarified in the future, and false negatives may increase.
 In addition, although the usual formula for accuracy is (\#TP+\#TN)/(\#TP+\#FP+\#FN+\#TN), we do not know the true negative, so it matches the formula for usual accuracy when \#TN is 0.
 
 \begin{table}[tb]
@@ -530,14 +529,14 @@ Total  & \#TP=31  & \#FN=3  & \#FP=0   \\ \hline
 \subsection{Details of Detected Malware Activity}
 \label{Details}
 We discuss the details of detected malware activities according to three attack types: IoT malware, router vulnerabilities, and other vulnerabilities.
-There are two types of malware used for cyberattacks: (1) malware that forms a botnet and receives a command from a C2 server then executes a network scan, and (2) malware such as worms, computer viruses, etc. that spreads network scanning on a wide area to self-propagate.
+There are two types of malware used for cyberattacks: (1) malware that forms a botnet and receives a command from a C2 server then executes network scans, and (2) malware such as worms, computer viruses, etc. that spreads network scanning on a wide area to self-propagate.
 
 
 \subsubsection{IoT Malware}
 The true positive 14 TCP ports of IoT malware type in Table~\ref{tab:answer} were roughly divided into three types of malware: Mirai, Hajime, and HNS (Hide and Seek).
 First, the Mirai scanned many web-based TCP ports of 7547, and a series of 80, 8000 and spread more and more to scan new web-based TCP ports.
 Next, the Hajime regularly scanned TCP ports 5358 and 9000.
-Finally, the HNS scanned TCP ports 23, 80, 8080, 2480, 5984, and random port~\cite{Netlab_HNS}.
+Finally, the HNS scanned TCP ports 23, 80, 8080, 2480, 5984, and random ports~\cite{Netlab_HNS}.
 
 
 
@@ -565,8 +564,8 @@ At this point, the \textit{GLASSO} engine detected these scan campaigns all at a
 \section{Consideration of False Negative}
 \label{Consideration}
 In this section, we consider the false negative this time.
-Scans with the features of Mirai were observed of TCP port numbers 444 and 8010, and scans for searching the CMS (Content Management System) service of TCP port number 2004 were observed.
-Looking at the number of source hosts for 10 minutes by each darknet sensor, 161 source hosts were observed when TCP port 8010 was at the peak, while TCP ports 444 and 2004 were observed with 19 and 23 source hosts at most.
+Scans with the features of Mirai were observed of TCP ports 444 and 8010, and scans for searching the CMS (Content Management System) service at TCP port 2004 were observed.
+Looking at the number of source hosts for 10 minutes by each darknet sensor, 161 source hosts were observed when TCP port 8010 was at the peak, while TCP ports 444 and 2004 were observed at 19 and 23 source hosts at most.
 
 
 First of all, the reason why we missed TCP port 8010 is because of handling only TCP ports with the largest number of source hosts in outlier time slot datasets as alerts.
@@ -587,28 +586,28 @@ As a countermeasure for such false negatives, considering a method that can incr
 
 
 \section{Conclusion}
-The proposed \textit{GLASSO} engine, unlike our earlier work~\cite{Han}, makes it possible to detect new malware activities in real time and thus enables us to respond to situations more quickly.
+The proposed \textit{GLASSO} engine, unlike our earlier work~\cite{Han}, makes it possible to detect new malware activities in real time and thus enables us to respond to the situation more quickly.
 Various evaluations have been conducted to demonstrate the effectiveness of the engine.
-We clarified that the engine produced alerts for three types of activities, i.e., cyberattack, survey scan, and sporadically-focused traffic, and that they can be properly distinguished by preparing the proper criteria.
+We clarified that the engine produced alerts for three types of activities, i.e., cyberattacks, survey scans, and sporadically-focused traffic, and that they can be properly distinguished by preparing the proper criteria.
 We made limited ground truth by manual analysis, with which we evaluated the malware activity detection performance of the engine and analyzed the details of the detected activities.
-Moreover, the engine detected anomalous events that could not have been detected using the conventional method.
-Although the engine suffers from some false negatives, we believe that these could be alleviated by preparing the environment properly.
+Moreover, the engine detected the anomalous events that could not have been detected using the conventional methods.
+Although the engine suffers from some false negatives, we believe that these could be alleviated by improving and tuning the engine properly.
 Accordingly, we conclude that the proposed \textit{GLASSO} engine can automatically and precisely ascertain indiscriminate cyberattacks like network scans in real time.
-Datasets which we used in this paper are available online at \url{https://csdataset.nict.go.jp/darknet}
+The datasets which we used in this paper are available online at \url{https://csdataset.nict.go.jp/darknet}
 
 This work is to be improved further.
 First, the \textit{GLASSO} engine could be optimized further to reduce false negatives.
 Second, pilot operation with the engine should also be conducted to evaluate its practical effectiveness over a long period.
-Third, the phenomenon we call sporadically-focused traffic remains unclear; further investigation of this phenomenon should be conducted using another dataset generated from the honeypot in addition to the darknet.
-Finally, since it was found that the \textit{GLASSO} engine can detect not only cyberattacks but also survey scanners, we would like to detect survey scanners as an extension study.
+Third, the phenomenon we call sporadically-focused traffic remains unclear; further investigation of this phenomenon should be conducted using another dataset generated from honeypots in addition to darknets.
+Finally, since it was found that the \textit{GLASSO} engine can detect not only cyberattacks but also survey scanners, we would like to establish a method to detect survey scanners as an extension study.
 Through this work, we hope to streamline security operations and reduce the burden of network security operators and incident response teams.
 
 
 
 
 \section*{Acknowledgment}
-{\small The authors wish to thank Associate Prof. K. Yoshioka from Yokohama National University and  Prof. N. Murata from Waseda University for their valuable comments.
-This research was partially supported by JSPS KAKENHI Grant Number 18H03291.}
+The authors wish to thank Associate Prof. K. Yoshioka from Yokohama National University and  Prof. N. Murata from Waseda University for their valuable comments.
+This research was partially supported by JSPS KAKENHI Grant Number 18H03291.
 
 
 
