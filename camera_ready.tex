@@ -157,7 +157,7 @@ In other words, the graph in GGM using this precision matrix shows the condition
 The maximum-likelihood estimate of a precision matrix $\Sigma^{-1}$ is the inverse of the sample covariance matrix $S$.
 We expect the precision matrix $\Sigma^{-1}$ to be a sparse matrix such that for the variable pairs with essential dependencies the corresponding elements are nonzero and for the weakly related variable pairs the corresponding elements are zero.
 In general, however, the elements of the inverse of the sample covariance matrix $S$ cannot be strictly zero.
-Accordingly, the graphical lasso, which is a sparse structure learning algorithm, optimizes a precision matrix by solving a penalized maximum-likelihood equation with $\ell_1$ regularization term $r\sum_{ij}|\Sigma^{-1}_{ij}|$~\cite{Friedman}.
+Accordingly, the graphical lasso, which is a sparse structure learning algorithm, optimizes a precision matrix by solving a penalized maximum-likelihood equation with $\ell_1$ regularization term $r\sum_{ij}|(\Sigma^{-1})_{ij}|$~\cite{Friedman}.
 The input arguments of the graphical lasso algorithm are the sample covariance matrix $S$ and the $\ell_1$ regularization coefficient $r\;(\geq 0)$.
 Here, $r$ is a hyperparameter for deciding how much dependency is regarded as noise-derived, and it is possible to adjust the sparsity of the precision matrix to be estimated.
 From the above, the GGM graph using the precision matrix $\hat{\Sigma^{-1}}$ estimated by the graphical lasso algorithm expresses the more essential dependencies of all variable pairs than the maximum-likelihood estimate of the precision matrix.
@@ -219,7 +219,7 @@ We prepare darknet traffic observed over a long period (e.g., three days' traffi
 At that time, we consider only SYN packets, TCP.
 Next, data matrices $\bm{D}$ are created for $\bm{X}$, and sample covariance matrices $\bm{S}$ are obtained.
 Sample covariance matrices $\bm{S}$ and a positive real number $r$ are input to the graphical lasso algorithm to obtain a sparsely estimated precision matrices ${(\bm{\hat{\Sigma^{-1}}})}^{(r)}$.
-Here, we try some positive real numbers like $r \in R \, ( \, = \{r_1, r_2, \cdots, r_s\} \subset [0,\infty))$.
+Here, we try some positive real numbers like $r \in R \  ( \, = \{r_1, r_2, \cdots, r_s\} \subset [0,\infty))$.
 From each estimated precision matrix, an undirected graph $G = \{V, E\}$ in the GGM could be represented by node set $V=\{x_{1}, \cdots, x_{N}\}$ and edge set $E=\{(i,j)|{(\hat{\Sigma^{-1}})}_{ij}\neq0\}$.
 Then, in order to express the degree of cooperation between all pairs of source hosts in each time slot dataset with scalar values, we obtain a graph density value $d^{(r)}=|E|/N(N-1)$ for each time slot dataset.
 The graph density value represents the ratio of the actual number of edges to the number of edges of the complete graph.
@@ -240,13 +240,14 @@ The targeted TCP port refers to the TCP port with the largest number of source h
 \subsection{Online Processing Algorithm}
 We consider a method of outputting alerts (outliers) sequentially by processing every time slot dataset, rather than by processing multiple time slot datasets at once.
 Let $K$ be an arbitrary positive integer.
-First, the newest time slot dataset $X$ is processed in the same manner as in Section~\ref{Batch} to obtain a graph density value $d^{(r)}$.
+First, the newest time slot dataset $X$ is processed in the same manner as in Section~\ref{Batch} to obtain a graph density value $d^{(r)}$ for each $r$.
 Then, $d^{(r)}$ is added to a sequence of the past graph density value $\bm{d}^{(r)}$, and if the length of $\bm{d}^{(r)}$ equals $K$, an alert judgment (outlier detection) is performed.
-If the length of $\bm{d}^{(r)}$ is less than $K$, we wait until the next time slot dataset is updated without performing an alert judgment.
+If the length of $\bm{d}^{(r)}$ is less than $K$, we wait until a next $X$ is updated without performing an alert judgment.
 The detailed alert judgment method is explained in the next section.
-The time slot dataset judged as an outlier is output as an alert and is deleted from $\bm{d}$ so that it will not be referred to in a subsequent alert judgment.
-In addition, if no time slot dataset is determined as an outlier, the oldest $d^{(r)}$ is deleted from $\bm{d}^{(r)}$.
-When the time has passed and a new time slot dataset is updated, by repeating the above steps, it is possible to sequentially process the \textit{GLASSO} engine while maintaining the number of time slot datasets used for alert judgment.
+Time slot datasets judged as $outliers$ are output as an alert and are deleted all graph densities at the same time slots as the $outliers$ from $\bm{d}$ so that it will not be referred to in a subsequent alert judgment.
+The $\bm{d}$ denotes the sequence of graph density value for all $r \in R$.
+In addition, if no time slot dataset is determined as an outlier, the oldest value is deleted from $\bm{d}^{(r)}$.
+When the time has passed and a new $X$ is updated, by repeating the above steps, it is possible to sequentially process the \textit{GLASSO} engine while maintaining the number of time slot datasets used for alert judgment.
 As a result, it obtains the result in real time after a very short time compared to the batch mode, since only an updated time slot dataset is processed.
 The pseudocode for the \textit{GLASSO} engine with online processing is described in Algorithm~\ref{alg1}.
 Here, the $length()$ function obtains the length of the vectors.
@@ -256,7 +257,7 @@ Here, the $length()$ function obtains the length of the vectors.
 \caption{\textit{GLASSO} Engine with Online Processing}
 \label{alg1}
 \begin{algorithmic}[1]
-  \REQUIRE $X, M, r \in R \, ( \, = \{r_1, r_2, \cdots, r_s\} ), \bm{d}^{(r)}, K, \theta$\\
+  \REQUIRE $X, M, r \in R \  ( \, = \{r_1, r_2, \cdots, r_s\} ), \bm{d}^{(r)}, K, \theta$\\
   \ENSURE alerts or none (per while-loop)
 
   \WHILE{$X$ is updated newly}
@@ -272,24 +273,23 @@ Here, the $length()$ function obtains the length of the vectors.
         \IF{there are $outliers$}
           \STATE collect alert information from $outliers$
           \RETURN alerts
-          \STATE delete $outliers$ from $\bm{d}$
+          \STATE delete all graph densities at the same time slots as the $outliers$ from $\bm{d}$
         \ELSE
-          \STATE delete the oldest $d^{(r)}$ from $\bm{d}^{(r)}$
+          \STATE delete the oldest value from $\bm{d}^{(r)}$
         \ENDIF
   		\ENDIF
   	\ENDFOR
   \ENDWHILE
 \end{algorithmic}
-\caption{\textit{GLASSO} Engine with Online Processing}
 \end{algorithm}
 
 
 
 \subsection{Alert Judgment Method for Online Processing}
-In this section, we propose an outlier detection method for a sequence of graph density values $\bm{d}$ during online processing.
-It checks how much the largest element occupies a total sample variance in $\bm{d}$, and when the largest element exceeds a criterion of an outlier judgment formula, it is judged as an outlier.
+In this section, we propose an outlier detection method for a sequence of graph density values $\bm{d}^{(r)}$ during online processing.
+It checks how much the largest element occupies a total sample variance in $\bm{d}^{(r)}$, and when the largest element exceeds a criterion of an outlier judgment formula, it is judged as an outlier.
 The pseudocode of the alert judgment method is shown in Algorithm~\ref{alg2}.
-Here, $\sigma^{2}_{(i+1)}/\sigma^{2}_{(i)}<\theta$ is an outlier judgment formula, and $\theta \, (0\leq \theta \leq 1)$ is a threshold value.
+Here, $\sigma^{2}_{(i+1)}/\sigma^{2}_{(i)}<\theta$ is an outlier judgment formula, and $\theta \  (0\leq \theta \leq 1)$ is a threshold value.
 In addition, the $order()$ function returns a permutation that rearranges its first argument into descending order, and the $var()$ function returns a sample variance.
 
 
@@ -297,20 +297,20 @@ In addition, the $order()$ function returns a permutation that rearranges its fi
 \caption{\textit{alert-judgment-method}}
 \label{alg2}
 \begin{algorithmic}[1]
-  \REQUIRE $\bm{d}\in\mathbb{R}^{K}, K, \theta$\\
+  \REQUIRE $\bm{d}^{(r)}\in\mathbb{R}^{K}, K, \theta$\\
   \ENSURE $outliers$ or none
 
   \STATE $i, j \gets 0$
   \WHILE{TRUE}
     \STATE $i \gets i + 1$
-    \STATE $\bm{d}_{(i)} \gets order(\bm{d})[i:K]$
+    \STATE $\bm{d}_{(i)} \gets order(\bm{d}^{(r)})[i:K]$
     \STATE $\sigma_{(i)}^2 \gets var(\bm{d}_{(i)})$
     \IF{$\sigma_{(i+1)}^2 / \sigma_{(i)}^2 < \theta$}
       \STATE $j \gets j + 1$
     \ELSIF{$i=1$}
       \STATE \textbf{break}
     \ELSE
-      \STATE $outliers \gets order(\bm{d})[1:j]$
+      \STATE $outliers \gets order(\bm{d}^{(r)})[1:j]$
       \RETURN $outliers$
     \ENDIF
   \ENDWHILE
@@ -359,7 +359,7 @@ In other words, by tuning $r$, it is possible to scrape-down weakly related depe
 Based on this perspective, we see that $r$ and $M$ have similar roles.
 As a feature of $r$, $d^{(r)}$ generally becomes closer to 1 as $r$ becomes closer to 0, and $d^{(r)}$ becomes closer to 0 as $r$ becomes larger.
 In addition, as $r$ is increased, the number of zero elements of a precision matrix estimated by the graphical lasso algorithm increases, so that the calculation time is shortened.
-Finally, $r$ can be tried multiple times with $R \, ( \, = \{r_1, r_2, \cdots, r_s\}\subset [0,\infty))$, but the processing time of the \textit{GLASSO} engine increases by the number of trials.
+Finally, $r$ can be tried multiple times with $R \  ( \, = \{r_1, r_2, \cdots, r_s\}\subset [0,\infty))$, but the processing time of the \textit{GLASSO} engine increases by the number of trials.
 
 We set the \textit{GLASSO} engine's parameter as $T=600$ \textit{(sec.)}, $M=12$ and examine which value of $r$ is appropriate.
 First, even when we try with varying values from six decimal places to two decimal places, the graph density value does not change significantly.
@@ -367,7 +367,7 @@ For example, our experience shows that time slot datasets, which are alerted wit
 From this, we discover that it is sufficient to try while changing the value to one decimal place.
 In addition, there are many zero matrices from $r\geq 1$, which often result in $d^{(r)}=0$.
 The processing time also takes longer for $r < 0.4$, where a sufficiently sparse precision matrix is not estimated, and outliers do not emerge in most cases.
-From the above, we finally decided to set $r \in R \, ( \, = \{0.4, 0.5, 0.6, 0.7, 0.8, 0.9\})$.
+From the above, we finally decided to set $r \in R \  ( \, = \{0.4, 0.5, 0.6, 0.7, 0.8, 0.9\})$.
 
 
 
@@ -376,7 +376,7 @@ The number of graph density values $K$ and the threshold $\theta$ are used for a
 In general, the precision of outlier detection improves as the number of data increases.
 However, in the case of time-series data that changes rapidly depending on the time, the precision may decrease as the number of data increases.
 That is, it is necessary to select $K$ appropriately, as well as the relationship between $M$ and $r$, unless $K$ is set to an extreme number, it can be covered with $\theta$.
-The $\theta \, (0\leq \theta \leq 1)$ is the threshold of the outlier judgment formula $\sigma^{2}_{(i+1)}/\sigma^{2}_{(i)}<\theta$.
+The $\theta \  (0\leq \theta \leq 1)$ is the threshold of the outlier judgment formula $\sigma^{2}_{(i+1)}/\sigma^{2}_{(i)}<\theta$.
 As $\theta$ approaches 1, the outlier is judged loosely, and as it is closer to 0, the outlier is judged strictly.
 Based on our experience, we determined to use three days' data for outlier detection ($K=432$), and $\theta$ is now set to 0.98 after trial and error.
 
@@ -402,7 +402,7 @@ This preprocessing should take place on a regular basis.
 \subsection{Real-time Operation of \textit{GLASSO} Engine}
 \label{Operation}
 In this section, the results of the \textit{GLASSO} engine, which operated for one month in October 2018, are shown.
-The input parameters of the \textit{GLASSO} engine used for the operation were set to $T=600$ \textit{(sec.)}, $M=12$, $K=432$, $\theta=0.98$, $r \in R \, ( \, = \{0.4, 0.5, 0.6, 0.7, 0.8, 0.9\})$.
+The input parameters of the \textit{GLASSO} engine used for the operation were set to $T=600$ \textit{(sec.)}, $M=12$, $K=432$, $\theta=0.98$, $r \in R \  ( \, = \{0.4, 0.5, 0.6, 0.7, 0.8, 0.9\})$.
 We considered only the TCP-SYN packets, and the TCP ports 22, 23, 80, 81, 445, 2323, 3389, 5431, 5555, 8080, 50382, 50390, and 52869 were excluded in the preprocessing phase.
 These TCP ports constantly received a large number of packets from various source hosts before September to October 1, 2018.
 In addition, although the IPv4 address of a source host is 32 bits, in this experiment, the upper 16 bits of the IPv4 address is regarded as one IP address, and the lower 16 bits are combined into one in order to reduce the number of source hosts $N$.
@@ -598,7 +598,7 @@ The datasets which we used in this paper are available online at \url{https://cs
 This work is to be improved further.
 First, the \textit{GLASSO} engine could be optimized further to reduce false negatives.
 Second, pilot operation with the engine should also be conducted to evaluate its practical effectiveness over a long period.
-Third, the phenomenon we call sporadically-focused traffic remains unclear; further investigation of this phenomenon should be conducted using another dataset generated from honeypots in addition to darknets.
+Third, the phenomenon we call sporadically-focused traffic remains unclear; further investigation of this phenomenon should be conducted using another type of datasets observed by honeypots in addition to darknets.
 Finally, since it was found that the \textit{GLASSO} engine can detect not only cyberattacks but also survey scanners, we would like to establish a method to detect survey scanners as an extension study.
 Through this work, we hope to streamline security operations and reduce the burden of network security operators and incident response teams.
 
