@@ -246,7 +246,7 @@ If the length of $\bm{d}^{(r)}$ is less than $K$, we wait until a next $X$ is up
 The detailed alert judgment method is explained in the next section.
 Time slot datasets judged as $outliers$ are output as an alert and are deleted all graph densities at the same time slots as the $outliers$ from $\bm{d}$ so that it will not be referred to in a subsequent alert judgment.
 The $\bm{d}$ denotes the sequence of graph density value for all $r \in R$.
-In addition, if no time slot dataset is determined as an outlier, the oldest value is deleted from $\bm{d}^{(r)}$.
+In addition, if no time slot dataset is determined as an outlier, the oldest value is deleted from $\bm{d}$.
 When the time has passed and a new $X$ is updated, by repeating the above steps, it is possible to sequentially process the \textit{GLASSO} engine while maintaining the number of time slot datasets used for alert judgment.
 As a result, it obtains the result in real time after a very short time compared to the batch mode, since only an updated time slot dataset is processed.
 The pseudocode for the \textit{GLASSO} engine with online processing is described in Algorithm~\ref{alg1}.
@@ -270,15 +270,15 @@ Here, the $length()$ function obtains the length of the vectors.
       \STATE add $d^{(r)}$ to $\bm{d}^{(r)}$
       \IF{$length(\bm{d}^{(r)}) = K$}
         \STATE \textbf{call} \textit{\textbf{alert-judgment-method($\bm{d}^{(r)}, K, \theta$)}}
-        \IF{there are $outliers$}
-          \STATE collect alert information from $outliers$
-          \RETURN alerts
-          \STATE delete all graph densities at the same time slots as the $outliers$ from $\bm{d}$
-        \ELSE
-          \STATE delete the oldest value from $\bm{d}^{(r)}$
-        \ENDIF
   		\ENDIF
   	\ENDFOR
+    \IF{there are $outliers$}
+      \STATE collect alert information from $outliers$
+      \RETURN alerts
+      \STATE delete all graph densities at the same time slots as the $outliers$ from $\bm{d}$
+    \ELSE
+      \STATE delete the oldest value from $\bm{d}$
+    \ENDIF
   \ENDWHILE
 \end{algorithmic}
 \end{algorithm}
